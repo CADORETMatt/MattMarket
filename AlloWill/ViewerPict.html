@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Sprite Sheet Viewer — découpe et animation</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, Roboto, "Helvetica Neue", Arial;
+            background: #111;
+            color: #eee;
+            padding: 16px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        label {
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            padding: 6px;
+            background: #222;
+            border: 1px solid #333;
+            color: #eee;
+            width: 110px;
+        }
+
+        input[type=file] {
+            color: #eee;
+        }
+
+        button {
+            padding: 8px 10px;
+            background: #2b8;
+            color: #031;
+            border: none;
+            cursor: pointer;
+        }
+
+        canvas {
+            background: #222;
+            border: 1px solid #333;
+            image-rendering: pixelated;
+            display: block;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .small {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .status {
+            color: #9cf;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Sprite Sheet Viewer — découpe & animation</h2>
+
+    <div class="controls">
+        <div>
+            <label>Image (local) :</label><br>
+            <input id="fileInput" type="file" accept="image/*">
+        </div>
+
+        <div>
+            <label>ou URL :</label><br>
+            <input id="urlInput" type="text" placeholder="https://... (optionnel)" style="width:260px">
+            <button id="loadUrlBtn">Charger URL</button>
+        </div>
+
+        <div>
+            <label>Frames (horiz.) :</label><br>
+            <input id="framesCount" type="number" value="6" min="1">
+        </div>
+
+        <div>
+            <label>FPS :</label><br>
+            <input id="fps" type="number" value="12" min="1" max="60">
+        </div>
+
+        <div>
+            <label>Scale :</label><br>
+            <input id="scale" type="number" value="2" min="0.25" step="0.25">
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+            <button id="playBtn">Play</button>
+            <button id="pauseBtn">Pause</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+            <label class="small"><input id="loop" type="checkbox" checked> Loop</label>
+            <label class="small"><input id="fit" type="checkbox"> Fit canvas height</label>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="small">Preview (frame courante)</div>
+            <canvas id="preview" width="320" height="200"></canvas>
+            <div>
+                <input id="frameSlider" type="range" min="0" value="0" step="1" style="width:320px">
+            </div>
+            <div class="status" id="info">Aucune image chargée</div>
+        </div>
+
+        <div class="col">
+            <div class="small">Sprite sheet (original)</div>
+            <canvas id="sheet" width="320" height="200"></canvas>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const fileInput = document.getElementById('fileInput');
+            const urlInput = document.getElementById('urlInput');
+            const loadUrlBtn = document.getElementById('loadUrlBtn');
+            const framesCountEl = document.getElementById('framesCount');
+            const fpsEl = document.getElementById('fps');
+            const scaleEl = document.getElementById('scale');
+            const preview = document.getElementById('preview');
+            const pctx = preview.getContext('2d');
+            const sheet = document.getElementById('sheet');
+            const sctx = sheet.getContext('2d');
+            const playBtn = document.getElementById('playBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const frameSlider = document.getElementById('frameSlider');
+            const loopCheckbox = document.getElementById('loop');
+            const fitCheckbox = document.getElementById('fit');
+            const info = document.getElementById('info');
+
+            let img = new Image();
+            let imgLoaded = false;
+            let framesCount = parseInt(framesCountEl.value, 10) || 1;
+            let currentFrame = 0;
+            let playing = false;
+            let lastTime = 0;
+            let accumulator = 0;
+            let frameDuration = 1000 / Math.max(1, parseInt(fpsEl.value, 10) || 12);
+            let scale = parseFloat(scaleEl.value) || 1;
+            let frameW = 0, frameH = 0;
+
+            function resetState() {
+                img = new Image();
+                imgLoaded = false;
+                currentFrame = 0;
+                accumulator = 0;
+                lastTime = 0;
+                playing = false;
+                info.textContent = 'Aucune image chargée';
+                frameSlider.value = 0;
+                frameSlider.max = 0;
+            }
+
+            resetState();
+
+            // Load from local file
+            fileInput.addEventListener('change', async (e) => {
+                const f = e.target.files[0];
+                if (!f) return;
+                const url = URL.createObjectURL(f);
+                await loadImage(url);
+                URL.revokeObjectURL(url);
+            });
+
+            // Load from URL (simple)
+            loadUrlBtn.addEventListener('click', async () => {
+                const url = urlInput.value.trim();
+                if (!url) { info.textContent = 'Entrez une URL'; return; }
+                try {
+                    // Try to fetch HEAD first to ensure reachable (avoid CORS issues later)
+                    const r = await fetch(url, { method: 'HEAD' });
+                    if (!r.ok && r.status !== 200) {
+                        // still attempt to set src (some servers reject HEAD)
+                        // continue
+                    }
+                } catch (err) {
+                    // ignore, we'll still try to set image.src and let browser handle CORS errors
+                }
+                await loadImage(url);
+            });
+
+            async function loadImage(src) {
+                resetState();
+                info.textContent = 'Chargement image...';
+                return new Promise((resolve, reject) => {
+                    img = new Image();
+                    img.crossOrigin = 'anonymous'; // allow canvas usage when CORS permits
+                    img.onload = () => {
+                        imgLoaded = true;
+                        frameW = Math.max(1, Math.floor(img.width / framesCount));
+                        frameH = img.height;
+                        // adjust canvases
+                        const desiredPreviewH = Math.max(64, frameH * scale);
+                        preview.width = frameW * scale;
+                        preview.height = frameH * scale;
+                        sheet.width = img.width;
+                        sheet.height = img.height;
+                        // draw sheet
+                        sctx.clearRect(0, 0, sheet.width, sheet.height);
+                        sctx.drawImage(img, 0, 0);
+                        // slider
+                        frameSlider.max = Math.max(0, framesCount - 1);
+                        frameSlider.value = 0;
+                        currentFrame = 0;
+                        updateFrameDuration();
+                        updateScale();
+                        drawFrameImmediate();
+                        info.textContent = `Image chargée: ${img.width}×${img.height} — frames: ${framesCount}`;
+                        resolve();
+                    };
+                    img.onerror = (e) => {
+                        info.textContent = 'Erreur chargement image (CORS ou URL invalide)';
+                        reject(e);
+                    };
+                    img.src = src;
+                });
+            }
+
+            // update derived values when frames count changed
+            framesCountEl.addEventListener('change', () => {
+                framesCount = Math.max(1, parseInt(framesCountEl.value, 10) || 1);
+                if (imgLoaded) {
+                    frameW = Math.max(1, Math.floor(img.width / framesCount));
+                    frameSlider.max = Math.max(0, framesCount - 1);
+                    // readapt preview size
+                    updateScale();
+                    drawFrameImmediate();
+                    info.textContent = `frames mis à jour: ${framesCount}`;
+                }
+            });
+
+            fpsEl.addEventListener('change', updateFrameDuration);
+            function updateFrameDuration() {
+                const fps = Math.max(1, parseInt(fpsEl.value, 10) || 12);
+                frameDuration = 1000 / fps;
+            }
+
+            scaleEl.addEventListener('change', updateScale);
+            function updateScale() {
+                scale = Math.max(0.25, parseFloat(scaleEl.value) || 1);
+                if (imgLoaded) {
+                    preview.width = Math.max(1, Math.floor(frameW * scale));
+                    preview.height = Math.max(1, Math.floor(frameH * scale));
+                }
+            }
+
+            // play/pause
+            playBtn.addEventListener('click', () => {
+                if (!imgLoaded) return;
+                playing = true;
+                lastTime = performance.now();
+                requestAnimationFrame(tick);
+            });
+            pauseBtn.addEventListener('click', () => { playing = false; });
+
+            // manual slider
+            frameSlider.addEventListener('input', () => {
+                currentFrame = parseInt(frameSlider.value, 10) || 0;
+                drawFrameImmediate();
+            });
+
+            // the animation loop using requestAnimationFrame and accumulator for consistent fps
+            function tick(now) {
+                if (!playing) return;
+                const dt = now - lastTime;
+                lastTime = now;
+                accumulator += dt;
+                while (accumulator >= frameDuration) {
+                    accumulator -= frameDuration;
+                    currentFrame++;
+                    if (currentFrame >= framesCount) {
+                        if (loopCheckbox.checked) currentFrame = 0;
+                        else { currentFrame = framesCount - 1; playing = false; break; }
+                    }
+                }
+                frameSlider.value = currentFrame;
+                drawFrameImmediate();
+                if (playing) requestAnimationFrame(tick);
+            }
+
+            // draw the current frame into preview canvas
+            function drawFrameImmediate() {
+                if (!imgLoaded) {
+                    pctx.clearRect(0, 0, preview.width, preview.height);
+                    return;
+                }
+                // recompute frameW in case framesCount changed while loaded
+                frameW = Math.max(1, Math.floor(img.width / framesCount));
+                frameH = img.height;
+                // compute source x
+                let sx = currentFrame * frameW;
+                // clamp to image width (in case non-exact division)
+                if (sx + frameW > img.width) sx = img.width - frameW;
+
+                // optionally fit by height if checked
+                if (fitCheckbox.checked) {
+                    // target height = preview.height; target width = aspect * height
+                    const targetH = preview.parentElement.clientHeight || preview.height;
+                    // but we just scale by scale
+                }
+
+                pctx.clearRect(0, 0, preview.width, preview.height);
+                // draw the slice scaled with nearest-neighbor-ish (pixelated)
+                pctx.imageSmoothingEnabled = false;
+                try {
+                    pctx.drawImage(img, sx, 0, frameW, frameH, 0, 0, Math.max(1, Math.floor(frameW * scale)), Math.max(1, Math.floor(frameH * scale)));
+                } catch (e) {
+                    // draw fallback: clear
+                    pctx.clearRect(0, 0, preview.width, preview.height);
+                    info.textContent = 'Erreur drawImage: ' + e;
+                }
+            }
+
+            // keyboard controls: space to play/pause, left/right to step
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') { e.preventDefault(); playing = !playing; if (playing) { lastTime = performance.now(); requestAnimationFrame(tick); } }
+                if (e.code === 'ArrowRight') { currentFrame = Math.min(framesCount - 1, currentFrame + 1); frameSlider.value = currentFrame; drawFrameImmediate(); }
+                if (e.code === 'ArrowLeft') { currentFrame = Math.max(0, currentFrame - 1); frameSlider.value = currentFrame; drawFrameImmediate(); }
+            });
+
+            // initial demo: nothing loaded
+            info.textContent = 'Glisse un fichier ou colle une URL puis clique "Charger URL"';
+        })();
+    </script>
+
+</body>
+
+</html>
+
+<!--     // Fonction pour charger un fichier JSON externe et retourner un objet JS
+        function LoadJsonImg(jsonUrl, callback) {
+            fetch(jsonUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('Erreur chargement JSON');
+                    return response.json();
+                })
+                .then(data => callback(data))
+                .catch(error => console.error('Erreur :', error));
+        }
+
+        // Fonction pour dessiner la scène sur le canvas
+        function AffJsonImg(canvasID, sceneObj) {
+            const canvas = document.getElementById(canvasID);
+            if (!canvas) {
+                console.error('Canvas non trouvé:', canvasID);
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+
+            // Effacer le canvas avant de dessiner
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const width = sceneObj.width;
+            const height = sceneObj.height;
+
+            // Dessiner le décor principal (draw[x][y])
+            for (let x = 0; x < width; x++) {
+                for (let y = 0; y < height; y++) {
+                    const color = sceneObj.draw[x][y];
+                    if (color) {
+                        ctx.fillStyle = color;
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+
+            /* // Dessiner les éléments animés (animX) mais ici fixes, sans animation
+             if (sceneObj.anims && Array.isArray(sceneObj.anims)) {
+                 sceneObj.anims.forEach(anim => {
+                     for (let x = 0; x < anim.w; x++) {
+                         for (let y = 0; y < anim.h; y++) {
+                             const color = anim.draw[x][y];
+                             if (color) {
+                                 ctx.fillStyle = color;
+                                 ctx.fillRect(anim.x + x, anim.y + y, 1, 1);
+                             }
+                         }
+                     }
+                 });
+             }*/
+        }
+
+        // Exemple d'utilisation :
+        // LoadJsonImg('Scene1.json', scene1 => AffJsonImg('canvas1', scene1));
+-->

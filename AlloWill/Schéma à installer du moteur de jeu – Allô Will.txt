@@ -1,0 +1,146 @@
+Schéma du moteur de jeu – Allô Will
+
+
+INPUT :
+Clavier
+Tactile
+Souris
+→ Intentions
+
+LOGIQUE JEU :
+SceneState
+Player
+ItemManager
+Camera
+Timer
+Collisions
+→ Mise à jour état
+
+RENDER :
+Canvas
+Décor
+Items
+Player
+UI
+→ Affichage
+
+Principes clés :
+• Le monde (world) n’est jamais modifié par le rendu
+• La caméra convertit monde → écran
+• Le rendu ne modifie jamais l’état du jeu
+• Les inputs ne déplacent rien directement
+
+**les symptômes classiques d’un moteur de jeu qui a grandi “organiquement”** 😅
+->**mettre des frontières claires**.
+
+#  Règle d’or pour ne plus te perdre (fondamental)
+> **Une donnée = un propriétaire clair**
+
+Voici la règle que ton code ne respecte pas encore complètement :
+
+| Concept              | Qui en est responsable       |
+| -------------------- | ---------------------------- |
+| Taille écran         | `Renderer`                   |
+| Caméra               | `Camera`                     |
+| Scène (données)      | `SceneData`                  |
+| Scène (état runtime) | `SceneState`                 |
+| Coordonnées monde    | **toujours en monde**        |
+| Coordonnées écran    | **calculées une seule fois** |
+
+---
+
+# Comment restructurer sans tout casser
+
+**les bons objets** sont juste trop dispersés.
+
+---
+
+## 🧱 Étape 1 – Séparer CONFIG vs ÉTAT
+### À viser
+
+```js
+// CONFIG (jamais modifié)
+const SCENES = [{ name, width, height, items: [...] }]
+
+// ÉTAT (runtime)
+class SceneState {
+  constructor(sceneData, savedItems) {
+    this.data = sceneData;
+    this.items = new ItemManager(sceneData, savedItems);
+    this.cameraX = sceneData.startSc ?? 0;
+  }
+}
+```
+
+---
+
+## 🧱 Étape 2 – Centraliser le rendu
+### Structure propre
+
+```js
+Renderer.drawScene(sceneState);
+Renderer.drawItems(sceneState.items);
+Renderer.drawPlayer(player);
+Renderer.drawUI();
+```
+
+Même si ça appelle les mêmes fonctions derrière, **tu sais où regarder**.
+
+---
+
+## 🧱 Étape 3 – Input = 1 seul point d’entrée
+### Structure propre
+
+```js
+Input.update();        // calcule une intention
+Movement.update();    // applique
+Camera.update();      // scroll
+```
+
+---
+
+## 🧱 Étape 4 – Ce que tu peux faire tout de suite (concret)
+###  Centraliser le calcul décor
+
+Dans `changeScene` :
+
+```js
+viewAssetWidth = scene.height * (WIDTH / HEIGHT);
+```
+
+➡️ **ne plus jamais le recalculer ailleurs**
+
+###  Ajouter des logs ciblés
+
+```js
+console.table({
+  scene: scene.name,
+  sceneW: scene.width,
+  cameraX,
+  viewAssetWidth
+});
+```
+
+---
+
+#  Pourquoi ton instinct est bon
+
+Tu as déjà :
+
+* des **classes**
+* une **séparation logique**
+* une **gestion d’état par scène**
+* un **pipeline draw/update**
+
+👉 Tu es **pile** au moment où un moteur perso passe de *“proto qui marche”* à *“code maintenable”*.
+
+---
+
+## 🎯 Conclusion
+
+👉 **Ne cherche pas un bug isolé**
+👉 **Impose des frontières claires** :
+
+* Monde ≠ Caméra ≠ Canvas
+* Données ≠ État
+* Input ≠ Mouvement ≠ Rendu

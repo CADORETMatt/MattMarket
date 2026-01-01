@@ -1,0 +1,25 @@
+/*Algo - A PLACER
+        ///////////////////////////////////////
+        -
+        ----------------------------------------
+        ALGO
+        ----------------------------------------
+        *-ECRAN DE DEMARRAGE (LOGO MATTMARKETDIGITALS)
+        **fondu
+        *-MENU 
+      //**JEU***********************************
+        ***INPUT
+      --***Le joueur est au centre
+        ***écran à 1000x250
+        ***affichage décor
+        ****Assets
+        ****AffBMP
+        ***affichage 250x250
+        ***PLACEMENTJOUEUR
+        ***COLLISION
+        **OPTIONS
+        **EXIT 
+        ***CREDITS
+.        ///////////////////////////////////////
+        */
+        

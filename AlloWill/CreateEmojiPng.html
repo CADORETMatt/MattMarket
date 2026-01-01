@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Emoji → PNG (taille utilisateur)</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        #preview {
+            border: 1px solid #ccc;
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- MattMarket logo (local path provided) -->
+    <img id="logo" width="100 px" height="100 px" src="LogoMattMRKT.png" alt="Logo MattMarket (local)"
+        onerror="this.style.display='none'">
+
+    <h1>Convertir un Emoji en PNG (taille choisie)</h2>
+
+        <label>Emoji :</label>
+        <input id="emojiInput" value="🍬" maxlength="4" style="font-size:24px;">
+        <br><br>
+        <label style="margin-left:20px;">Largeur/hauteur (px) :</label>
+        <input type="number" id="imgWidth" value="100" min="1" style="width:80px;">
+
+        <button id="previewBtn" style="margin-left:20px;">Preview</button>
+
+        <br><br>
+        <img id="preview" src="" style="width:100px;" alt="aperçu">
+
+        <!-- canvas caché, on l'utilise uniquement pour générer le PNG -->
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <br>
+        <a id="downloadLink" download="emoji.png" style="display:none;">
+            <button>Télécharger le PNG</button>
+        </a>
+
+        <script>
+            document.getElementById("previewBtn").onclick = function () {
+                const emoji = document.getElementById("emojiInput").value || "❓";
+                let sizePx = parseInt(document.getElementById("imgWidth").value, 10);
+                if (isNaN(sizePx) || sizePx <= 0) sizePx = 100;
+
+                const canvas = document.getElementById("canvas");
+                const ctx = canvas.getContext("2d");
+
+                // Gérer devicePixelRatio pour avoir un PNG net sur écrans haute-DPI
+                const ratio = window.devicePixelRatio || 1;
+
+                // Définir la taille en pixels (taille réelle du PNG)
+                canvas.width = Math.round(sizePx * ratio);
+                canvas.height = Math.round(sizePx * ratio);
+
+                // conserver une taille CSS affichée si on montrait le canvas (ici on cache)
+                canvas.style.width = sizePx + "px";
+                canvas.style.height = sizePx + "px";
+
+                // mettre le transform pour dessiner en unités CSS
+                ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+                // fond transparent
+                ctx.clearRect(0, 0, sizePx, sizePx);
+
+                // dessiner l'emoji centré ; on utilise sizePx comme taille de police
+                ctx.font = sizePx + "px serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(emoji, sizePx / 2, sizePx / 2 + sizePx * 0.1);
+
+                // récupérer le PNG (sera de sizePx x sizePx pixels)
+                const url = canvas.toDataURL("image/png");
+
+                // afficher l'aperçu (on peut l'afficher à la même taille CSS que demandé)
+                const preview = document.getElementById("preview");
+                preview.src = url;
+                preview.style.width = sizePx + "px"; // ajuste l'aperçu dans la page
+
+                // préparer le téléchargement
+                const dl = document.getElementById("downloadLink");
+                dl.href = url;
+                dl.style.display = "inline-block";
+            };
+        </script>
+
+</body>
+
+</html>

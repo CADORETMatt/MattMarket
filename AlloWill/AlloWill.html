@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Allô Will ? Ici Trouille !</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+
+      /* Le plus important → disposition VERTICALE */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      touch-action: none;
+      height: 100vh;
+      text-align: center;
+      padding: 5px;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      /* hauteur proportionnelle */
+      max-width: 500px;
+      image-rendering: pixelated;
+      border: 2px solid #444;
+      /*margin-left:15px;
+      margin-right:15px;*/
+      display: block;
+    }
+
+    a {
+      color: #9d4bff;
+      /* violet */
+      font-size: 1.2em;
+      margin-top: 15px;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- CANVAS DU JEU -->
+  <canvas id="game" width="500" height="500"></canvas>
+
+  <!-- LIEN BIEN SOUS LE CANVAS -->
+  <!--<button id="start">Démarrer le jeu</button> -->
+  <a href="EditSon.html">Éditeur de sample</a>
+  <a href="CreateEmojiPng.html">Convertisseur EmojiToPng</a>
+
+  <script src="AlloWill.js"></script>
+</body>
+
+</html>

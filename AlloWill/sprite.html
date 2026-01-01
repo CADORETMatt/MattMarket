@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <title>GIF → Sprite sheet (éditeur souris)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 12px;
+            background: #111;
+            color: #eee;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+        }
+
+        input[type=text],
+        input[type=number] {
+            width: 320px;
+            padding: 6px;
+            background: #222;
+            color: #eee;
+            border: 1px solid #333;
+        }
+
+        button {
+            padding: 8px 12px;
+            background: #2a7;
+            color: #031;
+            border: none;
+            cursor: pointer;
+        }
+
+        canvas {
+            background: #222;
+            display: block;
+            border: 1px solid #444;
+        }
+
+        .thumb-wrap {
+            position: relative;
+            width: auto;
+            height: auto;
+        }
+
+        #thumbCanvas {
+            image-rendering: pixelated;
+        }
+
+        /* nicer for pixel art */
+        .info {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .warn {
+            color: #ff8;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>GIF → Sprite Sheet (édition par souris)</h2>
+
+    <div class="row">
+        <div class="col" style="width:360px">
+            <input type="file" id="gifFile" accept="image/gif,image/webp">
+            <button onclick="loadGifFromFile()">Charger GIF local</button>
+            <label>URL du GIF:</label>
+            <input id="gifUrl" type="text" placeholder="https://..." />
+            <button id="loadBtn">Charger le GIF</button>
+            <div class="info" id="status">Aucun GIF chargé</div>
+            <div class="warn" id="warn"></div>
+
+            <hr />
+
+            <label>Plage timecode (s) :</label>
+            <div>
+                <input id="startTime" type="number" step="0.1" value="0" /> →
+                <input id="endTime" type="number" step="0.1" value="0" />
+            </div>
+
+            <label>Nombre de sprites (frames) :</label>
+            <input id="count" type="number" value="6" min="1" max="200" />
+
+            <label>Taille du crop (px) — carré 1:1 (zoom du pointeur) :</label>
+            <input id="cropSize" type="number" value="64" min="8" max="500" />
+
+            <label>Taille d'un sprite final (px) :</label>
+            <input id="spriteSize" type="number" value="64" min="4" max="512" />
+
+            <div style="display:flex; gap:8px;">
+                <button id="generateBtn">Générer le sheet</button>
+                <button id="downloadBtn">Télécharger PNG</button>
+            </div>
+
+            <div class="info">Durée GIF: <span id="durationText">—</span></div>
+        </div>
+
+        <div class="col">
+            <div><strong>Miniature (hover pour rogner)</strong></div>
+            <div class="thumb-wrap">
+                <canvas id="thumbCanvas" width="200" height="200"></canvas>
+            </div>
+            <div class="info" id="thumbInfo">Miniature non disponible</div>
+        </div>
+
+        <div class="col">
+            <div><strong>Preview sprite sheet</strong></div>
+            <canvas id="sheetCanvas" width="512" height="256"></canvas>
+            <div class="info">Cliquez sur "Générer le sheet" pour voir l'assemblage</div>
+        </div>
+    </div>
+
+    <script>
+        /* --- Variables --- */
+        const loadBtn = document.getElementById('loadBtn');
+        const gifUrlInput = document.getElementById('gifUrl');
+        const status = document.getElementById('status');
+        const warn = document.getElementById('warn');
+        const durationText = document.getElementById('durationText');
+
+        const thumbCanvas = document.getElementById('thumbCanvas');
+        const tctx = thumbCanvas.getContext('2d');
+        const thumbInfo = document.getElementById('thumbInfo');
+
+        const sheetCanvas = document.getElementById('sheetCanvas');
+        const sctx = sheetCanvas.getContext('2d');
+
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+        const countInput = document.getElementById('count');
+        const cropSizeInput = document.getElementById('cropSize');
+        const spriteSizeInput = document.getElementById('spriteSize');
+
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        /* state */
+        let frames = []; // {bitmap, duration (ms), timestamp (ms)}
+        let totalDuration = 0;
+        let imgNaturalW = 0, imgNaturalH = 0;
+        let thumbScale = 1, thumbW = 0, thumbH = 0;
+
+        /* crop box state (on thumb) */
+        let crop = { x: 0, y: 0, size: 64, dragging: false };
+
+        /* --- Helpers --- */
+        function setStatus(text) { status.textContent = text; }
+        function setWarn(text) { warn.textContent = text; }
+
+        // --- Load GIF from local file input ---
+        async function loadGifFromFile() {
+            const fileInput = document.getElementById('gifFile');
+            if (fileInput.files.length === 0) {
+                setWarn('Sélectionne un fichier GIF local d’abord.');
+                return;
+            }
+            const file = fileInput.files[0];
+            const url = URL.createObjectURL(file);
+            await loadGifFromUrl(url);
+            URL.revokeObjectURL(url);
+        }
+        /* --- Load GIF from URL and decode frames using ImageDecoder (when available) --- */
+        async function loadGifFromUrl(url) {
+            setWarn('');
+            setStatus('Téléchargement...');
+            frames = [];
+            totalDuration = 0;
+            durationText.textContent = '—';
+            thumbInfo.textContent = 'Chargement...';
+
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error('Erreur réseau ' + resp.status);
+                const blob = await resp.blob();
+                const buffer = await blob.arrayBuffer();
+                // Preferred method: ImageDecoder (experimental but present dans Chrome/Edge récent)
+                if (window.ImageDecoder) {
+                    setStatus('Décodage (ImageDecoder)...');
+                    const decoder = new ImageDecoder({
+                        data: buffer,              // ✔️ maintenant c'est un ArrayBuffer
+                        type: blob.type || 'image/gif'
+                    });                    // optionnel : decoder.tracked?
+                    const { numberOfFrames } = decoder;
+                    if (!numberOfFrames || numberOfFrames === 0) {
+                        throw new Error("Ce GIF n’est pas décodable (0 frame détectée).");
+                    }
+                    // decode all frames
+                    let timestamp = 0;
+                    for (let i = 0; i < numberOfFrames; i++) {
+                        const result = await decoder.decode({ frameIndex: i });
+                        // result has imageBitmap and duration
+                        const bitmap = result.image;
+                        const duration = result.duration || 100; // ms; fallback 100ms if absent
+                        frames.push({ bitmap, duration, timestamp });
+                        timestamp += duration;
+                    }
+                    totalDuration = timestamp;
+                    setStatus('Décodage terminé: ' + frames.length + ' frames');
+                } else {
+                    // Fallback: createImageBitmap (will likely give only first frame)
+                    setWarn('ImageDecoder non disponible : fallback (1 frame seulement). Pour l’extraction de tous les frames, utilisez Chrome/Edge récent.');
+                    setStatus('Fallback decode (createImageBitmap)...');
+                    const bitmap = await createImageBitmap(blob);
+                    frames.push({ bitmap, duration: 1000, timestamp: 0 });
+                    totalDuration = 1000;
+                }
+
+                // store natural size from first frame
+                imgNaturalW = frames[0].bitmap.width;
+                imgNaturalH = frames[0].bitmap.height;
+
+                // build thumbnail (scale so smallest side ≤ 100)
+                const minSide = Math.min(imgNaturalW, imgNaturalH);
+                const scale = 100 / minSide;
+                thumbScale = Math.min(scale, 1);
+                thumbW = Math.round(imgNaturalW * thumbScale);
+                thumbH = Math.round(imgNaturalH * thumbScale);
+                thumbCanvas.width = thumbW;
+                thumbCanvas.height = thumbH;
+                tctx.clearRect(0, 0, thumbW, thumbH);
+                tctx.drawImage(frames[0].bitmap, 0, 0, thumbW, thumbH);
+                thumbInfo.textContent = `Miniature ${thumbW}×${thumbH}px (frame 0)`;
+
+                // time inputs
+                durationText.textContent = (totalDuration / 1000).toFixed(2) + ' s';
+                startTimeInput.value = 0;
+                endTimeInput.value = (totalDuration / 1000).toFixed(2);
+
+                // initial crop size
+                crop.size = Math.min(Math.round(Math.min(thumbW, thumbH) * 0.5), parseInt(cropSizeInput.value, 10));
+                crop.x = Math.max(0, Math.floor((thumbW - crop.size) / 2));
+                crop.y = Math.max(0, Math.floor((thumbH - crop.size) / 2));
+
+                drawThumbOverlay();
+            } catch (e) {
+                console.error(e);
+                setStatus('Erreur: ' + e.message);
+                setWarn('Impossible de charger/décoder le GIF. Vérifie l’URL ou essaie un autre navigateur.');
+            }
+        }
+
+        /* --- Thumbnail interaction: crop box follows mouse; drag to position --- */
+        function drawThumbOverlay() {
+            tctx.clearRect(0, 0, thumbCanvas.width, thumbCanvas.height);
+            if (frames.length === 0) return;
+            tctx.drawImage(frames[0].bitmap, 0, 0, thumbCanvas.width, thumbCanvas.height);
+
+            // Draw semi-transparent overlay outside crop
+            tctx.fillStyle = 'rgba(0,0,0,0.35)';
+            // top
+            tctx.fillRect(0, 0, thumbCanvas.width, crop.y);
+            // bottom
+            tctx.fillRect(0, crop.y + crop.size, thumbCanvas.width, thumbCanvas.height - (crop.y + crop.size));
+            // left
+            tctx.fillRect(0, crop.y, crop.x, crop.size);
+            // right
+            tctx.fillRect(crop.x + crop.size, crop.y, thumbCanvas.width - (crop.x + crop.size), crop.size);
+
+            // Draw crop border
+            tctx.strokeStyle = '#fff';
+            tctx.lineWidth = 1;
+            tctx.strokeRect(crop.x + 0.5, crop.y + 0.5, crop.size, crop.size);
+        }
+
+        /* map mouse coords to thumb coords */
+        function getMousePosOnThumb(evt) {
+            const rect = thumbCanvas.getBoundingClientRect();
+            const x = (evt.clientX - rect.left) * (thumbCanvas.width / rect.width);
+            const y = (evt.clientY - rect.top) * (thumbCanvas.height / rect.height);
+            return { x, y };
+        }
+
+        thumbCanvas.addEventListener('mousemove', (e) => {
+            if (!frames.length) return;
+            const pos = getMousePosOnThumb(e);
+            const half = Math.floor(crop.size / 2);
+            if (!crop.dragging) {
+                // pointer follow: center crop on pointer, but clamp inside image
+                crop.x = Math.max(0, Math.min(thumbCanvas.width - crop.size, Math.floor(pos.x - half)));
+                crop.y = Math.max(0, Math.min(thumbCanvas.height - crop.size, Math.floor(pos.y - half)));
+                drawThumbOverlay();
+            } else {
+                // dragging, set top-left relative to pointer offset stored
+                crop.x = Math.max(0, Math.min(thumbCanvas.width - crop.size, Math.floor(pos.x - crop.dragOffsetX)));
+                crop.y = Math.max(0, Math.min(thumbCanvas.height - crop.size, Math.floor(pos.y - crop.dragOffsetY)));
+                drawThumbOverlay();
+            }
+        });
+
+        thumbCanvas.addEventListener('mousedown', (e) => {
+            if (!frames.length) return;
+            const pos = getMousePosOnThumb(e);
+            // start dragging; compute offset from pos to top-left
+            crop.dragging = true;
+            crop.dragOffsetX = pos.x - crop.x;
+            crop.dragOffsetY = pos.y - crop.y;
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            crop.dragging = false;
+        });
+
+        /* update crop size from control */
+        cropSizeInput.addEventListener('change', () => {
+            const newSize = Math.min(Math.max(8, parseInt(cropSizeInput.value, 10) || 64), Math.min(thumbCanvas.width, thumbCanvas.height));
+            crop.size = newSize;
+            // clamp x,y
+            crop.x = Math.max(0, Math.min(thumbCanvas.width - crop.size, crop.x));
+            crop.y = Math.max(0, Math.min(thumbCanvas.height - crop.size, crop.y));
+            drawThumbOverlay();
+        });
+
+        /* --- Generate sprite sheet --- */
+        async function generateSheet() {
+            if (!frames.length) { setWarn('Charge d’abord un GIF'); return; }
+            setWarn('');
+            // read params
+            const startS = Math.max(0, parseFloat(startTimeInput.value) || 0);
+            const endS = Math.max(0, parseFloat(endTimeInput.value) || (totalDuration / 1000));
+            const count = Math.max(1, parseInt(countInput.value, 10) || 1);
+            const spriteOutSize = Math.max(4, parseInt(spriteSizeInput.value, 10) || 32);
+
+            const startMs = Math.max(0, startS * 1000);
+            const endMs = Math.min(totalDuration, Math.max(startMs + 1, endS * 1000));
+
+            // sample times evenly
+            const sampleTimes = [];
+            if (count === 1) sampleTimes.push((startMs + endMs) / 2);
+            else {
+                for (let i = 0; i < count; i++) {
+                    const t = startMs + (i / (count - 1)) * (endMs - startMs);
+                    sampleTimes.push(t);
+                }
+            }
+
+            // For each sample time, pick the closest frame (by timestamp)
+            function pickFrameForTime(ms) {
+                // frames: each has timestamp and duration
+                if (frames.length === 1) return frames[0];
+                for (let i = 0; i < frames.length; i++) {
+                    const f = frames[i];
+                    const fStart = f.timestamp;
+                    const fEnd = fStart + f.duration;
+                    if (ms >= fStart && ms < fEnd) return f;
+                }
+                // if none, return last
+                return frames[frames.length - 1];
+            }
+
+            // compute source crop in original image coords
+            const scaleInv = 1 / thumbScale; // thumb -> original
+            const srcX = Math.round(crop.x * scaleInv);
+            const srcY = Math.round(crop.y * scaleInv);
+            const srcSize = Math.round(crop.size * scaleInv);
+
+            // Build sheet canvas layout: single row of count columns
+            const cols = count;
+            const rows = 1;
+            const sheetW = cols * spriteOutSize;
+            const sheetH = rows * spriteOutSize;
+            sheetCanvas.width = sheetW;
+            sheetCanvas.height = sheetH;
+            sctx.clearRect(0, 0, sheetW, sheetH);
+            sctx.fillStyle = "#0000"; sctx.fillRect(0, 0, sheetW, sheetH);
+
+            for (let i = 0; i < sampleTimes.length; i++) {
+                const f = pickFrameForTime(sampleTimes[i]);
+                // draw the selected frame's bitmap cropped
+                // drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh)
+                try {
+                    sctx.drawImage(f.bitmap, srcX, srcY, srcSize, srcSize, i * spriteOutSize, 0, spriteOutSize, spriteOutSize);
+                } catch (e) {
+                    console.warn('drawImage failed for frame', e);
+                    // skip
+                }
+            }
+
+            setStatus('Sheet généré: ' + cols + '×' + rows);
+        }
+
+        /* --- Download sheet as PNG --- */
+        downloadBtn.addEventListener('click', () => {
+            if (sheetCanvas.width === 0 || sheetCanvas.height === 0) { setWarn('Génère d’abord le sheet'); return; }
+            sheetCanvas.toBlob((blob) => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'spritesheet.png';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }, 'image/png');
+        });
+
+        /* --- UI wiring --- */
+        loadBtn.addEventListener('click', () => {
+            const url = gifUrlInput.value.trim();
+            if (!url) { setWarn('Entrez une URL'); return; }
+            loadGifFromUrl(url);
+        });
+
+        generateBtn.addEventListener('click', () => {
+            // update crop size from control (in thumb pixels)
+            crop.size = Math.min(Math.max(8, parseInt(cropSizeInput.value, 10) || 64), Math.min(thumbCanvas.width, thumbCanvas.height));
+            generateSheet();
+        });
+
+        /* --- initial demo placeholder --- */
+        // optional: fill thumb and sheet with placeholders
+        tctx.fillStyle = "#333"; tctx.fillRect(0, 0, thumbCanvas.width, thumbCanvas.height);
+        sctx.fillStyle = "#222"; sctx.fillRect(0, 0, sheetCanvas.width, sheetCanvas.height);
+        setStatus('Prêt. Colle l’URL d’un GIF et clique "Charger le GIF".');
+
+    </script>
+</body>
+
+</html>

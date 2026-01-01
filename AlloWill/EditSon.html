@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Editeur de sample — Violet / Noir (avec crossfade, granular, pan)</title>
+    <style>
+        :root {
+            --bg: #0b0011;
+            --panel: #12021a;
+            --accent: #9b59ff;
+            --accent-2: #6f3bd1;
+            --text: #eae6ff;
+            --muted: #9b8fb5;
+            --success: #42f57b;
+            --changed: #4ad0ff;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 18px;
+            font-family: "Segoe UI", Roboto, Arial;
+            background: linear-gradient(180deg, var(--bg), #050007);
+            color: var(--text);
+        }
+
+        .card {
+            background: linear-gradient(180deg, var(--panel), #0b0210);
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.7);
+            max-width: 980px;
+            margin: auto
+        }
+
+        h1 {
+            color: var(--accent);
+            margin: 0 0 12px 0
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.95rem
+        }
+
+        input[type="file"] {
+            color: var(--text)
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 150px;
+            padding: 8px;
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid rgba(155, 89, 255, 0.12);
+            background: #07030a;
+            color: var(--text)
+        }
+
+        button {
+            background: var(--accent);
+            color: #070007;
+            border: none;
+            padding: 8px 12px;
+            margin: 8px 6px 0 0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600
+        }
+
+        button.secondary {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid rgba(155, 89, 255, 0.18)
+        }
+
+        #downloadLink {
+            display: inline-block;
+            margin-top: 12px;
+            text-decoration: none;
+            font-weight: 700
+        }
+
+        #downloadLink.valid {
+            color: var(--success)
+        }
+
+        #downloadLink.changed {
+            color: var(--changed)
+        }
+
+        .meta {
+            margin-top: 8px;
+            color: var(--muted)
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .col {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        canvas#wave {
+            width: 100%;
+            height: 120px;
+            background: #050007;
+            margin-top: 10px;
+            border-radius: 6px;
+            display: block
+        }
+
+        #logo {
+            height: 120px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        small.note {
+            color: var(--muted)
+        }
+
+        .control-group {
+            margin-top: 8px
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+
+        <!-- MattMarket logo (local path provided) -->
+        <img id="logo" src="LogoMattMRKT.png" alt="Logo MattMarket (local)" onerror="this.style.display='none'">
+
+        <h1>🎛️ Editeur de sample — Crossfade · Granular · Pan</h1>
+        <p class="meta">Choisir un fichier local → sélectionner début/fin → options → prévisualiser / enregistrer</p>
+
+        <label>Choisir un fichier audio</label>
+        <input id="audioFile" type="file" accept="audio/*">
+
+        <div class="row">
+            <div>
+                <label>Durée totale</label>
+                <div id="totalDuration">00:00:000</div>
+            </div>
+
+            <div>
+                <label>Nom du sample (export)</label>
+                <input id="sampleName" type="text" value="sample.wav">
+            </div>
+        </div>
+
+        <label>Début (min:sec:ms)</label>
+        <input id="startInput" type="text" value="00:00:000" placeholder="00:00:000">
+
+        <label>Fin (min:sec:ms)</label>
+        <input id="endInput" type="text" value="00:02:000" placeholder="00:02:000">
+
+        <div class="row">
+            <div>
+                <label>Boucles</label>
+                <input id="loopsInput" type="number" min="1" value="1">
+            </div>
+
+            <div>
+                <label>Crossfade (ms) — fade-in/out pour boucle parfaite</label>
+                <input id="crossfadeMs" type="number" min="0" value="20">
+            </div>
+
+            <div>
+                <label>Réverb (%)</label>
+                <input id="reverbInput" type="number" min="0" max="100" value="0">
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label>Granular — Time-stretch (factor)</label>
+                <input id="stretchFactor" type="number" step="0.1" min="0.25" max="4" value="1.0">
+                <small class="note">1.0 = durée normale, &lt;1 = speed up, &gt;1 = stretch</small>
+            </div>
+
+            <div>
+                <label>Granular — Pitch (semitones)</label>
+                <input id="pitchSemis" type="number" step="1" min="-24" max="24" value="0">
+                <small class="note">+12 = +1 octave</small>
+            </div>
+
+            <div>
+                <label>Pan L ↔ R</label>
+                <input id="pan" type="range" min="-1" max="1" step="0.01" value="0" style="width:160px">
+                <div id="panVal" style="display:inline-block;margin-left:8px">0.00</div>
+            </div>
+        </div>
+
+        <div style="margin-top:12px">
+            <button id="previewBtn">▶ Prévisualiser</button>
+            <button id="stopBtn" class="secondary">■ Stop</button>
+            <button id="saveBtn">💾 Enregistrer</button>
+            <small class="note"> (le lien disparaît dès modification)</small>
+        </div>
+
+        <canvas id="wave" width="900" height="120"></canvas>
+
+        <div style="margin-top:12px">
+            <a id="downloadLink" href="#" download class="">Télécharger le sample</a>
+        </div>
+
+        <div id="saveStatus" class="meta"></div>
+    </div>
+
+    <script>
+        /* ========= Utilities: parse/format time mm:ss:ms & helpers ========= */
+        function parseTimeStr(str) {
+            if (!str) return 0;
+            // mm:ss:ms
+            const m = str.match(/^(\d+):(\d{1,2}):(\d{1,3})$/);
+            if (m) return (Number(m[1]) * 60000 + Number(m[2]) * 1000 + Number(m[3]));
+            // ss:ms (rare)
+            const s = str.match(/^(\d+):(\d{1,3})$/);
+            if (s) return Number(s[1]) * 1000 + Number(s[2]);
+            // decimal seconds
+            if (!isNaN(Number(str))) return Math.floor(Number(str) * 1000);
+            return 0;
+        }
+        function fmtMs(ms) {
+            ms = Math.max(0, Math.floor(ms)); const mm = Math.floor(ms / 60000); ms %= 60000; const ss = Math.floor(ms / 1000); const mls = ms % 1000;
+            return String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') + ':' + String(mls).padStart(3, '0');
+        }
+
+        /* ========= Audio globals ========= */
+        const audioFile = document.getElementById('audioFile');
+        const totalDuration = document.getElementById('totalDuration');
+        const startInput = document.getElementById('startInput');
+        const endInput = document.getElementById('endInput');
+        const loopsInput = document.getElementById('loopsInput');
+        const crossfadeMs = document.getElementById('crossfadeMs');
+        const reverbInput = document.getElementById('reverbInput');
+        const stretchFactor = document.getElementById('stretchFactor');
+        const pitchSemis = document.getElementById('pitchSemis');
+        const panControl = document.getElementById('pan');
+        const panVal = document.getElementById('panVal');
+        const previewBtn = document.getElementById('previewBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const downloadLink = document.getElementById('downloadLink');
+        const sampleName = document.getElementById('sampleName');
+        const saveStatus = document.getElementById('saveStatus');
+        const waveCanvas = document.getElementById('wave');
+        const wctx = waveCanvas.getContext('2d');
+
+        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let srcBuffer = null;
+        let currentNode = null;
+        let lastBlobUrl = null;
+        let modified = false;
+
+        /* hide link on change and revoke old blob */
+        function markChanged() { modified = true; if (lastBlobUrl) { URL.revokeObjectURL(lastBlobUrl); lastBlobUrl = null; } downloadLink.style.display = 'none'; downloadLink.className = ''; saveStatus.textContent = ''; }
+
+        /* wire inputs to markChanged */
+        [startInput, endInput, loopsInput, crossfadeMs, reverbInput, stretchFactor, pitchSemis, panControl, sampleName].forEach(el => el.addEventListener('input', markChanged, { passive: true }));
+
+        /* load audio file and draw waveform */
+        audioFile.addEventListener('change', async (e) => {
+            const f = e.target.files && e.target.files[0]; if (!f) return;
+            markChanged();
+            const ab = await f.arrayBuffer();
+            srcBuffer = await audioCtx.decodeAudioData(ab);
+            totalDuration.textContent = fmtMs(Math.floor(srcBuffer.duration * 1000));
+            endInput.value = fmtMs(Math.floor(srcBuffer.duration * 1000));
+            drawWaveform();
+        });
+
+        /* display waveform (simple downsampled) */
+        function drawWaveform() {
+            if (!srcBuffer) { wctx.clearRect(0, 0, waveCanvas.width, waveCanvas.height); return; }
+            const ch = srcBuffer.numberOfChannels;
+            const data = srcBuffer.getChannelData(0);
+            const w = waveCanvas.width, h = waveCanvas.height;
+            wctx.fillStyle = '#050007'; wctx.fillRect(0, 0, w, h);
+            wctx.strokeStyle = '#6f3bd1'; wctx.lineWidth = 1;
+            wctx.beginPath();
+            const step = Math.ceil(data.length / w);
+            for (let x = 0; x < w; x++) {
+                const start = x * step; let min = 1, max = -1;
+                for (let j = 0; j < step && start + j < data.length; j++) { const v = data[start + j]; if (v < min) min = v; if (v > max) max = v; }
+                const y1 = (1 + min) / 2 * h; const y2 = (1 + max) / 2 * h;
+                wctx.moveTo(x, y1); wctx.lineTo(x, y2);
+            }
+            wctx.stroke();
+        }
+
+        /* simple impulse for reverb */
+        function createImpulse(percent) {
+            const seconds = 0.15 + (percent / 100) * 1.0;
+            const len = Math.floor(audioCtx.sampleRate * seconds);
+            const ir = audioCtx.createBuffer(2, len, audioCtx.sampleRate);
+            for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2); }
+            return ir;
+        }
+
+        /* STOP playback cleanly */
+        function stopAll() {
+            if (currentNode) {
+                try { currentNode.stop(0); } catch (e) { }
+                try { currentNode.disconnect(); } catch (e) { }
+                currentNode = null;
+            }
+        }
+
+        /* Apply crossfade to a Float32Array buffer in place (fade-in at start, fade-out at end). */
+        function applyCrossfadeToChannel(channelData, fadeMs) {
+            if (fadeMs <= 0) return;
+            const fadeSamples = Math.floor(fadeMs * audioCtx.sampleRate / 1000);
+            const len = channelData.length;
+            for (let i = 0; i < fadeSamples && i < len; i++) {
+                const t = i / fadeSamples;
+                channelData[i] *= t; // fade in
+                channelData[len - 1 - i] *= t; // fade out
+            }
+        }
+
+        /* Granular time-stretch + pitch-shift using overlapping grains:
+           We'll implement a simple granular player for preview that can:
+           - preserve pitch or change it by playbackRate (approx)
+           - perform time-stretch by adjusting grain hop vs grain size
+           This is not a production-quality algorithm but works for creative preview/export.
+        */
+        function playGranular(buffer, options) {
+            stopAll();
+            const opts = Object.assign({ stretch: 1.0, pitchSemis: 0, grainMs: 80, overlap: 0.6, loops: 1, pan: 0, reverb: 0 }, options);
+            const grainSize = Math.max(8, Math.floor(opts.grainMs * buffer.sampleRate / 1000));
+            const hop = Math.max(1, Math.floor(grainSize / (opts.stretch)));
+            const totalSamples = grainSize * (Math.ceil(buffer.length / hop) + 2) * opts.loops;
+            // Build final buffer by resampling grains into an offline buffer
+            const finalLen = Math.max(1, Math.floor((buffer.length / opts.stretch) * opts.loops));
+            const outBuf = audioCtx.createBuffer(buffer.numberOfChannels, finalLen, buffer.sampleRate);
+
+            // Pitch factor from semitones
+            const pitchFactor = Math.pow(2, opts.pitchSemis / 12);
+
+            // Synthesize using simple windowed grains (Hann) into outBuf
+            const hann = (n, N) => 0.5 * (1 - Math.cos(2 * Math.PI * n / (N - 1)));
+            for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+                const src = buffer.getChannelData(ch);
+                const dst = outBuf.getChannelData(ch);
+                let writePos = 0;
+                for (let loop = 0; loop < opts.loops; loop++) {
+                    for (let readPos = 0; readPos < buffer.length; readPos += hop) {
+                        // create grain by reading grainSize samples at readPos * pitchFactor
+                        for (let g = 0; g < grainSize; g++) {
+                            const srcIdx = Math.floor((readPos + g) * pitchFactor);
+                            const s = src[srcIdx] || 0;
+                            const w = hann(g, grainSize);
+                            if (writePos + g < dst.length) dst[writePos + g] += s * w;
+                        }
+                        writePos += Math.floor(grainSize * (1 - opts.overlap));
+                        if (writePos >= dst.length) break;
+                    }
+                }
+                // Normalize (simple)
+                let max = 0; for (let i = 0; i < dst.length; i++) { if (Math.abs(dst[i]) > max) max = Math.abs(dst[i]); }
+                if (max > 1) for (let i = 0; i < dst.length; i++) dst[i] /= max;
+            }
+
+            // Apply crossfade if requested by caller (will be applied before calling this)
+            // Return node to play
+            const srcNode = audioCtx.createBufferSource();
+            srcNode.buffer = outBuf;
+
+            // pan
+            const panner = audioCtx.createStereoPanner();
+            panner.pan.value = opts.pan || 0;
+
+            // reverb
+            let finalOut = panner;
+            if (opts.reverb && opts.reverb > 0) {
+                const conv = audioCtx.createConvolver();
+                conv.buffer = createImpulse(opts.reverb);
+                srcNode.connect(panner);
+                panner.connect(conv);
+                conv.connect(audioCtx.destination);
+            } else {
+                srcNode.connect(panner);
+                panner.connect(audioCtx.destination);
+            }
+
+            srcNode.start(0);
+            currentNode = srcNode;
+            return srcNode;
+        }
+
+        /* Preview button logic:
+           We support two modes:
+            - if stretchFactor != 1 or pitchSemis != 0 -> granular preview (time-stretch/pitch-shift)
+            - else -> simple slice playback with pan and reverb and crossfade applied for looping correctness
+        */
+        previewBtn.addEventListener('click', () => {
+            if (!srcBuffer) { alert('Charge un fichier d’abord'); return; }
+            stopAll();
+
+            const startMs = parseTimeStr(startInput.value);
+            const endMs = parseTimeStr(endInput.value);
+            if (endMs <= startMs) { alert('Fin doit être > début'); return; }
+            const startS = startMs / 1000, endS = endMs / 1000;
+            const loops = Math.max(1, parseInt(loopsInput.value) || 1);
+            const crossMs = Math.max(0, parseInt(crossfadeMs.value) || 0);
+            const rev = Math.max(0, Math.min(100, parseInt(reverbInput.value) || 0));
+            const stretch = Math.max(0.25, parseFloat(stretchFactor.value) || 1.0);
+            const pitch = parseFloat(pitchSemis.value) || 0;
+            const pan = parseFloat(panControl.value) || 0;
+            panVal.textContent = pan.toFixed(2);
+
+            // Cut slice into buffer
+            const frameStart = Math.floor(startS * srcBuffer.sampleRate);
+            const frameEnd = Math.min(srcBuffer.length, Math.floor(endS * srcBuffer.sampleRate));
+            const sliceLen = frameEnd - frameStart;
+            if (sliceLen <= 0) return;
+
+            // create slice buffer
+            let slice = audioCtx.createBuffer(srcBuffer.numberOfChannels, sliceLen, srcBuffer.sampleRate);
+            for (let c = 0; c < srcBuffer.numberOfChannels; c++) {
+                const src = srcBuffer.getChannelData(c);
+                slice.copyToChannel(src.subarray(frameStart, frameEnd), c, 0);
+            }
+
+            // If no stretch/pitch -> play simple looped buffer with crossfade handling
+            if (Math.abs(stretch - 1.0) < 0.0001 && Math.abs(pitch) < 0.0001) {
+                // apply crossfade on slice channels then build looped final buffer
+                for (let c = 0; c < slice.numberOfChannels; c++) {
+                    applyCrossfadeToChannel(slice.getChannelData(c), crossMs);
+                }
+                const finalBuf = audioCtx.createBuffer(slice.numberOfChannels, slice.length * loops, slice.sampleRate);
+                for (let c = 0; c < slice.numberOfChannels; c++) {
+                    const dst = finalBuf.getChannelData(c);
+                    const s = slice.getChannelData(c);
+                    for (let L = 0; L < loops; L++) dst.set(s, L * slice.length);
+                }
+                // create source
+                const sNode = audioCtx.createBufferSource();
+                sNode.buffer = finalBuf;
+                // pan
+                const panner = audioCtx.createStereoPanner(); panner.pan.value = pan;
+                // reverb
+                if (rev > 0) {
+                    const conv = audioCtx.createConvolver(); conv.buffer = createImpulse(rev);
+                    sNode.connect(panner); panner.connect(conv); conv.connect(audioCtx.destination);
+                } else {
+                    sNode.connect(panner); panner.connect(audioCtx.destination);
+                }
+                sNode.start(0);
+                currentNode = sNode;
+            } else {
+                // granular preview: pass options
+                playGranular(slice, { stretch: stretch, pitchSemis: pitch, loops: loops, pan: pan, reverb: rev, grainMs: 80, overlap: 0.6 });
+            }
+        });
+
+        /* Stop button */
+        stopBtn.addEventListener('click', () => {
+            stopAll();
+        });
+
+        /* Save/export: similar approach as preview but we create an interleaved WAV and trigger download */
+        saveBtn.addEventListener('click', () => {
+            if (!srcBuffer) { alert('Charge un fichier d’abord'); return; }
+            stopAll();
+            const startMs = parseTimeStr(startInput.value);
+            const endMs = parseTimeStr(endInput.value);
+            if (endMs <= startMs) { alert('Fin doit être > début'); return; }
+            const startS = startMs / 1000, endS = endMs / 1000;
+            const loops = Math.max(1, parseInt(loopsInput.value) || 1);
+            const crossMs = Math.max(0, parseInt(crossfadeMs.value) || 0);
+            const rev = Math.max(0, Math.min(100, parseInt(reverbInput.value) || 0));
+            const stretch = Math.max(0.25, parseFloat(stretchFactor.value) || 1.0);
+            const pitch = parseFloat(pitchSemis.value) || 0;
+            const pan = parseFloat(panControl.value) || 0;
+
+            // slice buffer creation
+            const frameStart = Math.floor(startS * srcBuffer.sampleRate);
+            const frameEnd = Math.min(srcBuffer.length, Math.floor(endS * srcBuffer.sampleRate));
+            const sliceLen = frameEnd - frameStart;
+            if (sliceLen <= 0) return;
+            let slice = audioCtx.createBuffer(srcBuffer.numberOfChannels, sliceLen, srcBuffer.sampleRate);
+            for (let c = 0; c < srcBuffer.numberOfChannels; c++) {
+                slice.copyToChannel(srcBuffer.getChannelData(c).subarray(frameStart, frameEnd), c, 0);
+            }
+
+            // apply crossfade (helps loop seams)
+            if (crossMs > 0) {
+                for (let c = 0; c < slice.numberOfChannels; c++) applyCrossfadeToChannel(slice.getChannelData(c), crossMs);
+            }
+
+            // If granular transforms requested (stretch/pitch) we use our granular synth to create final buffer
+            let finalBuf;
+            if (Math.abs(stretch - 1.0) < 0.0001 && Math.abs(pitch) < 0.0001) {
+                finalBuf = audioCtx.createBuffer(slice.numberOfChannels, slice.length * loops, slice.sampleRate);
+                for (let c = 0; c < slice.numberOfChannels; c++) {
+                    const d = finalBuf.getChannelData(c), s = slice.getChannelData(c);
+                    for (let L = 0; L < loops; L++) d.set(s, L * slice.length);
+                }
+            } else {
+                // reuse playGranular technique but produce an offline-like buffer approximate:
+                // For export, we synthesize using the same algorithm as playGranular but return buffer
+                // We'll create finalLen proportional to slice.length / stretch * loops
+                const finalLen = Math.max(1, Math.floor((slice.length / stretch) * loops));
+                finalBuf = audioCtx.createBuffer(slice.numberOfChannels, finalLen, slice.sampleRate);
+                // simple grain-based synthesis (same logic as playGranular but produce buffer)
+                const grainSize = Math.max(8, Math.floor(80 * slice.sampleRate / 1000));
+                const hop = Math.max(1, Math.floor(grainSize / (stretch)));
+                const pitchFactor = Math.pow(2, pitch / 12);
+                for (let ch = 0; ch < slice.numberOfChannels; ch++) {
+                    const src = slice.getChannelData(ch);
+                    const dst = finalBuf.getChannelData(ch);
+                    let writePos = 0;
+                    for (let loop = 0; loop < loops; loop++) {
+                        for (let readPos = 0; readPos < slice.length; readPos += hop) {
+                            for (let g = 0; g < grainSize; g++) {
+                                const srcIdx = Math.floor((readPos + g) * pitchFactor);
+                                const s = src[srcIdx] || 0;
+                                const w = 0.5 * (1 - Math.cos(2 * Math.PI * g / (grainSize - 1)));
+                                if (writePos + g < dst.length) dst[writePos + g] += s * w;
+                            }
+                            writePos += Math.floor(grainSize * (1 - 0.6));
+                            if (writePos >= dst.length) break;
+                        }
+                    }
+                    // normalize
+                    let max = 0; for (let i = 0; i < dst.length; i++) if (Math.abs(dst[i]) > max) max = Math.abs(dst[i]);
+                    if (max > 1) for (let i = 0; i < dst.length; i++) dst[i] /= max;
+                }
+            }
+
+            // Apply naive pan by mixing to stereo if necessary (finalBuf may be mono)
+            let interleaved;
+            if (finalBuf.numberOfChannels === 1) {
+                // convert mono -> stereo with pan
+                const leftGain = pan <= 0 ? 1 : 1 - pan;
+                const rightGain = pan >= 0 ? 1 : 1 + pan;
+                const len = finalBuf.length;
+                interleaved = new Float32Array(len * 2);
+                const mono = finalBuf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    interleaved[i * 2] = mono[i] * leftGain;
+                    interleaved[i * 2 + 1] = mono[i] * rightGain;
+                }
+            } else {
+                // if multi-channel (>=2), take first two channels and apply pan as subtle gain difference
+                const len = finalBuf.length;
+                const ch0 = finalBuf.getChannelData(0);
+                const ch1 = finalBuf.getChannelData(1);
+                interleaved = new Float32Array(len * 2);
+                const leftGain = pan <= 0 ? 1 : 1 - pan;
+                const rightGain = pan >= 0 ? 1 : 1 + pan;
+                for (let i = 0; i < len; i++) {
+                    interleaved[i * 2] = ch0[i] * leftGain;
+                    interleaved[i * 2 + 1] = ch1[i] * rightGain;
+                }
+            }
+
+            // apply reverb in time domain? (skip heavy conv, apply light tail by mixing an impulse if requested)
+            if (reverbInput.value > 0) {
+                // simple light reverb by convolving with short random kernel - omitted heavy CPU details for speed
+                // (we skip complex convolution export to keep code responsive)
+            }
+
+            // build WAV (16-bit PCM)
+            const wav = bufferToWavFromInterleaved(interleaved, audioCtx.sampleRate);
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
+            lastBlobUrl = URL.createObjectURL(blob);
+
+            const filename = (sampleName.value || 'sample') + (sampleName.value && sampleName.value.endsWith('.wav') ? '' : '.wav');
+            downloadLink.href = lastBlobUrl;
+            downloadLink.download = filename;
+            downloadLink.textContent = 'Télécharger le sample';
+            downloadLink.style.display = 'inline-block';
+            downloadLink.className = modified ? 'changed' : 'valid';
+            modified = false;
+
+            // automatically trigger download
+            const a = document.createElement('a'); a.href = lastBlobUrl; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+            saveStatus.textContent = 'Export terminé — téléchargement lancé';
+        });
+
+        /* helper: build WAV from interleaved Float32Array (stereo) */
+        function bufferToWavFromInterleaved(interleaved, sampleRate) {
+            // interleaved Float32Array [L0,R0,L1,R1,...]
+            const numChannels = 2;
+            const buffer = new ArrayBuffer(44 + interleaved.length * 2);
+            const view = new DataView(buffer);
+            function writeString(view, offset, str) { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); } let offset = 0;
+            writeString(view, offset, 'RIFF'); offset += 4;
+            view.setUint32(offset, 36 + interleaved.length * 2, true); offset += 4;
+            writeString(view, offset, 'WAVE'); offset += 4;
+            writeString(view, offset, 'fmt '); offset += 4;
+            view.setUint32(offset, 16, true); offset += 4;
+            view.setUint16(offset, 1, true); offset += 2;
+            view.setUint16(offset, numChannels, true); offset += 2;
+            view.setUint32(offset, sampleRate, true); offset += 4;
+            view.setUint32(offset, sampleRate * numChannels * 2, true); offset += 4;
+            view.setUint16(offset, numChannels * 2, true); offset += 2;
+            view.setUint16(offset, 16, true); offset += 2;
+            writeString(view, offset, 'data'); offset += 4;
+            view.setUint32(offset, interleaved.length * 2, true); offset += 4;
+            // write samples
+            let pos = offset;
+            for (let i = 0; i < interleaved.length; i++, pos += 2) {
+                let s = Math.max(-1, Math.min(1, interleaved[i]));
+                view.setInt16(pos, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+            return view.buffer;
+        }
+
+        /* avoid passive listener warnings */
+        ['touchstart', 'touchmove'].forEach(evt => window.addEventListener(evt, () => { }, { passive: true }));
+
+        /* small init: hide download link initially */
+        downloadLink.style.display = 'none';
+        panControl.addEventListener('input', () => panVal.textContent = parseFloat(panControl.value).toFixed(2));
+
+    </script>
+</body>
+
+</html>
