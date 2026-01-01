@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATTMARKET Digitals</title>
+    <link rel="stylesheet" href="MattMarketCSS2_2.css">
+    <meta name="description"
+        content="MattMarket Digitals - Portfolio de projets numériques, formation en programmation, services créatifs et informatiques.">
+    <meta name="keywords"
+        content="développement web, programmation, portfolio, projets numériques, MattMarket, apprentissage code">
+    <meta name="author" content="Matthias Cadoret">
+
+</head>
+
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <header role="banner" aria-label="En-tête principal du site">
+        <div class="banner" class="intro">
+            <img src="https://i.imgur.com/fMFEW8e.png" alt="Logo MattMarket Digitals" class="logo">
+
+            <nav class="social-icons" aria-label="Réseaux sociaux">
+                <a href="mailto:cadoret.matt@hotmail.com" aria-label="Envoyer un mail">
+                    <img src="https://img.icons8.com/ios-filled/32/000000/new-post.png" alt="Email">
+                </a>
+                <a href="https://www.linkedin.com/in/cadoret-matt-emploi" aria-label="Profil LinkedIn">
+                    <img src="https://img.icons8.com/ios-filled/32/000000/linkedin.png" alt="LinkedIn">
+                </a>
+                <a href="https://www.facebook.com/share/12B9TDEhBgf/" aria-label="Page Facebook">
+                    <img src="https://img.icons8.com/ios-filled/32/000000/facebook-new.png" alt="Facebook">
+                </a>
+        </div>
+        </nav>
+        <div class="header-text">
+            <h1 id="site-title">MattMarket Digitals</h1>
+            <p id="site-slogan">Projets numériques, formations et créativité.</p>
+        </div>
+    </header>
+    <main>
+        <!--
+<h2>Exclu du dimanche : le live à 15h !</h2>
+<a href="https://www.facebook.com/share/1LKHkXJVtb/" class="lumi-lien">Devenez mon ami Facebook pour voir mon live !</a>
+
+QR-CODE
+-->
+        <section class="image-container">
+            <img class="imageGarde" alt="Image de garde" src="https://i.imgur.com/9MnVQlK.jpeg">
+            <div class="tooltip">Partagez ce site avec ce QR code</div>
+        </section>
+
+        <!-- 
+
+A LA UNE
+
+-->
+        <section class="objectif">
+            <p><em>Un<strong> Dashboard d'accessibilité</strong> pourquoi pas ?</em></p>
+            <p><em>Mais, <strong>Parents, Professionnels de Santé, Institutions</strong>, commençons par un sondage</em>
+            </p>
+            <p><em>Venez <strong>suivre l'évolution</strong> du site et des projets en temps réel !</em></p>
+            <a href="https://github.com/CADORETMatt"><em>Venez me rejoindre sur Github !</em></a>
+            <p><em>Les <strong>Tutos Animation</strong> de Xavier sont dans <strong><br>"Vos Projets"</strong></em></p>
+            <p><em>Ma <strong>formation HTML</strong> sur Mimo.org est <strong>terminée </strong>!<br>Je reprends celle
+                    du <strong>Javascript</strong>.</em></p>
+            <p><em>Mes premières <strong>requêtes SQL</strong> ont réussies. Vous allez bientôt pouvoir vous
+                    <strong>créer un compte</strong> !</em></p><br>
+            <!-- <p><em>Faites-moi signe sur si vous voulez une vidéo sur la mise en place de l'espace de travail sur Github (pour créer votre site).</em></p> -->
+            <p><em><strong>Bonjour ! C'est MattMarket Digitals.</strong></em> 🤟😜</p>
+        </section>
+        <!--
+
+    SONDAGE 
+
+    -->
+        <section aria-label="Sondage" class="objectif-container">
+            <h2>SONDAGE</h2>
+
+            <div class="project">
+                <p>Nous avons besoin de vous !</p>
+                <p>La future appli de votre enfant TDAH ou votre futur outils médical...</p>
+                <a href="https://384bei.mimo.run/Sondage.html?screen=tdah" class="lumi-lien">Commencer le sondage</a>
+
+                <p>Le futur dashboard pour gérer votre PME ou votre micro-entreprise.</p>
+                <a href="https://384bei.mimo.run/Sondage.html?screen=client" class="lumi-lien">Commencer le sondage</a>
+            </div>
+        </section>
+
+        <!--
+
+  PROLOGUE
+
+-->
+        <section aria-label="Prologue">
+            <br>
+            <p>Tout était calme. Ou bien c'était l'agressivité de cette lumière jaillissante qui contrastait avec
+                l'environnement alentour. On pouvait voir sur cette surface plate et lisse, un paysage familier, mais
+                plus petit que nature. Au centre, une entité qui dominait tout autour d'elle, y compris un symbole
+                étrange constitué d'un grand nombre de petits carrés noirs, mais aucune forme semblait s'y dessiner.</p>
+            <br>
+            <p>En bas, enfermé, après quelques suites de symboles alignés, qu'on pourrait prendre pour des scolopendres
+                faisant la course, on pouvait voir sortir du lot, plusieurs de ces symboles qui rappelait bizarrement
+                quelque chose.</p>
+            <br>
+            <p>On pouvait lire sur cet écran, les mots :</p>
+            <p>"<strong>MattMarket Digitals </strong>🤟😜". - <em>PROLOGUE</em></p>
+            <br><br><br>
+            <img alt="Forêt et éclair" class="illustrations" src="https://i.imgur.com/FNOuCBx.jpeg">
+            <br><br><br>
+        </section>
+        <!-- 
+  
+  DEBUT HISTOIRE
+  
+-->
+        <section aria-label="Début de l'histoire">
+            <div class="intro">
+                <img src="https://img.freepik.com/vecteurs-premium/calligraphie-vectorielle-lettre-dessinee-main-j-drop-cap-icon-logo-police-caracteres-script-style-pinceau-ecrit-main_81863-12565.jpg"
+                    alt="I" class="intro-img">
+                <p><em>l était une fois,</em></p>
+                <br><br>
+            </div>
+            <p>un éclair silencieux.</p>
+            <p>Le seul bruit qui résultait du flash lumineux était la fuite d'une nuée d'oiseaux aux battements d'ailes
+                métalliques, dans une forêt profonde où les branches des arbres, qui semblaient malades cachaient le
+                ciel crépusculaire.</p>
+            <p>À moins que ce ne soit la journée et que la pollution cachait la lumière du soleil.</p>
+            <p>Il régnait une odeur de bois pourri et de ferraille oxydée. Un bruit sourd et cyclique envahissait toute
+                la forêt, rendant l'origine de ce vacarme indéfinissable. Et pourtant, tout semblait normal. Tout,
+                peut-être pas.</p>
+            <p>Au milieu de cette nature abandonnée, planté là, immobile sur ce qu'il devait être, quelques décennies
+                auparavant, un lieu de passage, un homme visiblement perdu, fixant un panneau qui délimitait une entrée
+                que personne n'avait franchi depuis très longtemps.</p>
+            <p>Sous une importante couche de rouille, l'homme put déchiffer les lettres inscrites sur la plaque de fer :
+            </p>
+            <br>
+            <img id="logo" alt="MattMarket Digitals" src="https://i.imgur.com/fMFEW8e.png">
+            <br><br>
+            <p>«Tiens ! J'ai déjà vu ça.» dit l'homme aux joues creuses et aux lèvres sèches. Ses bras étaient d'une
+                finesse semblable aux branches qu'il pouvait voir autour de lui et le reste de son corps était couvert
+                d'un costume que portaient les classes dirigeantes aux dernières heures de l'humanité. Mais tout comme
+                lui, il était sale et usé.</p>
+            <p>Il leva ses yeux vers le chemin recouvert de mousse et de quelques jeunes arbres ici et là, puis fit fi
+                du panneau accroché aux grilles qui, comme toute personne censée l'aurait deviné, entouraient un terrain
+                revendiqué. Même perdu dans cette forêt et dans sa tête, il savait qu'à partir de maintenant il
+                s'exposait à une éventuelle agression à son égard. Mais il avançait, sans savoir ce qui l'attendait
+                au-delà de l'immense mur végétal et . qui lui faisait face à présent.</p>
+        </section><br>
+        <!--
+
+  CARNET D'ADRESSES 
+
+-->
+        <nav aria-label="Carnet d'adresses">
+            <h2>CARNET D'ADRESSES</h2>
+            <div class="project">
+                <p>Vous avez besoin de matériels informatiques, d'un dépannage, d'une installation, sur DIEUZE ou à
+                    domicile :</p>
+                <a href="https://www.cim-info.fr/" class="lumi-lien">CIMINERA INFORMATIQUE</a>
+            </div>
+            <div class="project">
+                <p>Vous avez besoin d’infographies sur supports imprimés et numériques : logo, vidéo d'animation 2D
+                    (motion design)</p>
+                <a href="https://graphistemetz.com/" class="lumi-lien">XAVIER BERTOLOTTI<br>Graphiste multimédia</a>
+            </div>
+        </nav>
+        <!--
+
+  Section Objectifs 
+
+-->
+        <!--
+
+  1ère question 
+
+    <a class="lumi-liens" href="/encours.html">Txt-Altern</a>
+    -->
+        <section aria-label="Question utilisateur n°1 et objectifs">
+            <br><br>
+            <p id="paragraphe1">Affichez mes objectifs :</p>
+
+            <button class="bouton" onclick="afficherParagraphe('paragraphe2-1')">Est-ce que votre visite est
+                professionnelle ?</button>
+            <br><br>
+            <button class="bouton" onclick="afficherParagraphe('paragraphe2-2')">Êtes-vous plutôt un amateur de code
+                informatique ?</button>
+            <br><br>
+            <button class="bouton" onclick="afficherParagraphe('paragraphe2-3')">Êtes-vous sinon un visiteur curieux ou
+                est-ce que vous me connaissez en privé ?</button>
+
+
+            <div id="paragraphe2-1" class="cached">
+                <div class="objectif-container">
+                    <h2>Objectifs</h2>
+                    <div class="objectif">
+                        <h3>Objectifs en cours</h3>
+                        <ul>
+                            <li><em>Améliorer quotidiennement l'acceuil de mon site web.</em></li><br>
+                            <li><em>Me renseigner et mettre en place ma micro-entreprise, idéalement dansw la
+                                    programmation, pour aider les personnes atteinte de <strong>TDAH</strong>.</em></li>
+                            <br>
+                            <li><em>Postuler en tant que promoteur de vente ou employé libre-service freelance grâce à
+                                    LinkedIn. <strong>Venez me suivre !</strong></em></li>
+                        </ul>
+                    </div>
+                    <div class="objectif">
+                        <h3>Prochains objectifs</h3>
+                        <ul>
+                            <li><em>Avoir une entreprise lucrative afin de commencer <strong>l'objectif
+                                        suivant.</strong></em></li><br>
+                            <li><em>Démarrer une formation dans le domaine de la <strong>programmation.</strong></em>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <br><br>
+                <p>Découvrez mes projets professionnels.</p>
+                <br><br>
+                <!-- Les questions sont introduites comme dans un jeu de rôle (attitudes à adopter ?) -->
+                <div id="question2-1">
+                    <button class="bouton2" onclick="afficherQuestion2('question2-1','paragraphe3-1')">Vous êtes
+                        employeur et vous venez vous renseigner sur<br>Mr Matthias CADORET.</button>
+                    <br><br>
+                    <button class="bouton2" onclick="afficherQuestion2('question2-1','paragraphe3-2')">Vous êtes un
+                        client ou un prestataire et vous souhaitez faire appel à MATTMARKET.Digitals ?</button>
+                    <br>
+                </div>
+                <br><br>
+            </div>
+            <div id="paragraphe2-2" class="cached">
+                <div class="objectif-container">
+                    <h2>Objectifs</h2>
+                    <div class="objectif">
+                        <h3>Objectif en cours</h3>
+                        <ul>
+                            <li><em>Réaliser une histoire interactive depuis l'acceuil du site.</em></li><br>
+                            <li><em>Mise à jour régulière de <strong>MindMap</strong>.</em></li><br>
+                            <li>Mise au point sur la sémantique et l'accessibilité pour malvoyant.</li>
+                        </ul>
+                    </div>
+                    <div class="objectif">
+                        <h3>Prochains objectifs</h3>
+                        <ul>
+                            <li><em>Publier "Mes projets" sur Github pour créer <strong>l'adresse définitive</strong> de
+                                    cette page.</em></li>
+                    </div>
+                </div>
+
+                <div id="question2-2">
+                    <br><br>
+                    <button class="bouton2" onclick="afficherQuestion2('question2-2','paragraphe3-3')">Tu veux en
+                        apprendre plus sur la programmation</button>
+                    <br>
+                    <button class="bouton2" onclick="afficherQuestion2('question2-2','paragraphe3-4')">Tu veux partager
+                        ton expérience dans le code</button>
+                    <br>
+                </div>
+
+            </div>
+            <div id="paragraphe2-3" class="cached">
+                <div class="objectif-container">
+                    <h2>Objectifs</h2>
+                    <div class="objectif">
+                        <h3>Objectif en cours</h3>
+                        <ul>
+                            <li><em>Créer une micro-entreprise, cumulable avec mon CDD à temps plein, pour ensuite
+                                    démarrer une formation de programmation.</em></li><br>
+                            <li><em>Améliorer mon site, un portfolio/linktree, afin d'afficher mes liens, d'exposer mes
+                                    réalisations et d'apprendre sur le tas grâce un projet personnel.</em></li><br>
+                            <li><em>M'entraîner chaque soir au skateboard au pumptrack de Montigny-lès-Metz, plaine de
+                                    la Vacquinière.</em></li>
+                        </ul>
+                    </div>
+                    <div class="objectif">
+                        <h3>Prochain objectif</h3>
+                        <ul>
+                            <li><em>Entamer une formation en programmation, si possible avec un contrat de
+                                    professionnalisation en alternance.</em></li><br>
+                            <li><em>Vivre de ma passion et travailler depuis chez moi et n'importe où dans le
+                                    monde.</em></li>
+                            <li><em>Partir vivre au soleil quand mon garçon de 15 ans se sera émancipé ou qu'il voudra
+                                    suivre son père.</em></li>
+                        </ul>
+                    </div>
+                </div>
+                <div id="question2-3">
+                    <br><br>
+                    <p>Continue de répondre aux questions pour voir s'afficher du contenu te concernant !</p>
+                    <br>
+                    <button class="bouton2" onclick="afficherQuestion2('question2-3','paragraphe3-5')">«On se connait
+                        pas.»</button>
+                    <br>
+                    <button class="bouton2"
+                        onclick="afficherQuestion2('question2-3','paragraphe3-6','paragraphe3-7')">«On se connait
+                        personnellement.»</button>
+                    <br>
+                </div>
+
+            </div>
+        </section>
+        <br><br>
+        <!-- 
+
+    2è question et Projets 
+
+    
+-->
+        <section aria-label="Mes projets">
+            <h2>Mes projets :</h2>
+            <p>Retrouvez mes projets web et projets personnels.</p>
+
+            <!--
+ -Basculer h2 projet dans parag.
+  Section Projet
+  (PixelWar)
+-->
+            <div id="paragraphe3-1" class="cached">
+                <p>Vous cherchez à recruter</p>
+                <br>
+                <!--   <article>à créer</article> -->
+            </div>
+
+            <div id="paragraphe3-2" class="cached">
+                <p>Vous êtes client/prestataire.</p>
+                <br>
+                <article aria-label="Aide aux devoirs et programmation pour jeune" class="project">
+                    <p><strong>Aide aux devoirs</strong> pour élève en primaire ou au collège avec cours de
+                        <br><strong>programmation sur Minecraft/Roblox Studio</strong>.
+                    </p>
+                    <p>Vous êtes intéressé ?</p>
+                    <a href="mailto:mattmarket.digitals@gmail.com" class="lumi-lien">Contactez-moi</a>
+                    <p><strong>Libérez votre charge mentale</strong><br>le temps d'un après-midi !</p>
+                </article>
+                <article aria-label="Créer un site web" class="project">
+                    <p>Vous souhaitez <strong>créer un site vitrine</strong> pour votre entreprise<br>Ou <strong>un
+                            e-learning pour former</strong> ou informer vos collaborateurs.</p>
+                    <p>Vous souhaitez un devis…</p>
+                    <a href="mailto:mattmarket.digitals@gmail.com" class="lumi-lien">Contactez-moi</a>
+                    <p>Vous pourrez le moduler et le maintenir <strong>à votre guise !</strong><br></p>
+                </article>
+            </div>
+
+            <div id="paragraphe3-3" class="cached">
+                <p>Tu es débutant en programmation</p>
+                <br>
+
+                <article aria-label="Exemple d'animation" class="project">
+                    <a href="https://35p0en.mimo.run/flamme.html" class="lumi-lien">Flamme animée</a>
+                    <p>Découverte du premier script graphique en javascript</p>
+                    <p><em>Encore une nouvelle grosse porte s'ouvre !</em></p>
+                </article>
+
+                <article aria-label="Neurone artificiel" class="project">
+                    <a class="lumi-lien">Neurone artificiel</a>
+                    <p>Programmme Python générant une porte NON et une porte NAND</p>
+                </article>
+
+            </div>
+
+            <div id="paragraphe3-4" class="cached">
+                <p>Tu as un bon niveau en codage</p>
+                <br>
+                <article aria-label="Cours de graphisme en javascript" class="project">
+                    <a href="https://35p0en.mimo.run/ProfAnimation.html" class="lumi-lien">Cours de graphisme</a>
+                    <p>Tuto sur l'interface graphique de Javascript</p>
+                </article>
+            </div>
+
+            <div id="paragraphe2-2" class="cached">
+                <p>Tu aimes la programmation</p>
+                <br>
+                <article aria-label="Créer une formation" class="project">
+                    <a href="Prog1Prog.html" class="lumi-lien">Prog1Prog</a>
+                    <p>Apprenons ensemble à créer un site dit "statique"</p>
+                </article>
+            </div>
+
+            <div id="paragraphe3-5" class="cached">
+                <p>Tu m'as sûrement trouvé grâce aux réseaux sociaux</p>
+                <br>
+                <!--   <article>à créer</article> -->
+            </div>
+
+            <div id="paragraphe3-6" class="cached">
+                <p>Donc, on se connait !...? 🤔</p>
+                <br>
+                <article aria-label="Gérer ses courses" class="project">
+                    <a href="Courses.html" class="lumi-lien">Faire ses courses</a>
+                    <p>Grâce à ce site, gérez vos provisions de la semaine ou du mois.</p>
+                </article>
+            </div>
+            <article aria-label="Video musicale Youtube auto" class="project">
+                <img src="https://i.imgur.com/byDl38z.gif" width="200px" height="200px">
+                <p>Automatisation d'une chaîne Youtube et alimenté par IA.<br>(JS/Suno/NanoBanana)</p><a
+                    href="https://cadoretmatt.github.io/EDM4Work/index.html" class="lumi-lien">EDM4Work - Privé.<br>(En
+                    cours)</a>
+            </article>
+            <article aria-label="Jeu web halloween" class="project"><a href="https://cadoretmatt.github.io/AlloWill/"
+                    class="lumi-lien">Allô Will ?<br> Ici Trouille !</a>
+                <p>Un jeu en cours de développement où un éditeur de niveaux pourrait vous faire participer
+                    !<br>(création d'une API)</p>
+            </article>
+            <article aria-label="Mini-jeu Asteroid" class="project"><a href="https://35p0en.mimo.run/HopsTacle.html"
+                    class="lumi-lien">Hop's Tacle</a>
+                <p>Mon premier mini-jeu graphique</p>
+            </article>
+            <article aria-label="Mindmap, écrire ce qu'on apprend" class="project">
+                <a href="Mindmap4.html" class="lumi-lien">Mindmap</a>
+                <p>Ensemble des idées et méthodes qui m'intéresse</p>
+            </article>
+            <br><br>
+        </section>
+        <!--
+    
+    Vos projets 
+    
+    -->
+        <section aria-label="Vos projets">
+            <h2>Vos projets :</h2>
+            <p>Venez partager vos projets professionnels ou personnels.</p>
+            <article aria-label="Tuto animation de Xavier" class="project">
+                <p> Vous souhaitez :</p>
+                <ul>
+                    <li>Suivre une formation sur l'animation</li>
+                    <br>
+                    <li>Voir un projet de Xavier l'infographiste</li>
+                </ul>
+                <a class="lumi-lien" href="https://www.youtube.com/@xavierbertolotti/videos">B Motion</a>
+            </article>
+        </section>
+        <!-- 
+  
+
+  Section Liens
+
+-->
+        <br><br>
+        <section aria-label="Mes liens" class="objectif-container">
+            <h2>Mes Liens</h2>
+
+            <div class="project">
+                <a href="mailto:cadoret.matt@hotmail.com" class="lumi-lien">Mon adresse mail perso</a>
+                <p>(Egalement présent sur la bannière)</p>
+                <p>cadoret.matt@hotmail.com</p>
+            </div>
+            <div class="project">
+                <a href="https://www.linkedin.com/in/cadoret-matt-emploi?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app"
+                    class="lumi-lien">Mon LinkedIn</a>
+            </div>
+            <div class="project">
+                <a href="https://cvdesignr.com/p/671a124977974" class="lumi-lien">Mon CV d'intérim</a>
+                <p>Mes CV 'Responsable de rayon frais' et 'Développeur Full-stack' sont également disponibles </p>
+            </div>
+            <a href="https://github.com/CADORETMatt">
+                <div class="project">
+                    <a href="https://github.com/CADORETMatt" class="lumi-lien">Ma page Github</a>
+                    <p><strong>Du CODE pur et dur !</strong></p>
+                    <p>Les scripts de mes sites,<br>appli-web et jeux fait maison.<br>Actuels et à venir !</p>
+                </div>
+                <div class="project">
+                    <a href="https://www.facebook.com/share/12B9TDEhBgf/" class="lumi-lien">Ma page Facebook pro
+                        "MattMarket Digitals"</a>
+                </div>
+                <div class="project">
+                    <a href="https://www.facebook.com/groups/965196889085536/?ref=share" class="lumi-lien">Apprendre à
+                        coder</a>
+                    <p>Notre groupe de discussion Facebook si vous avez un projet en tête ou pour les codeurs amateurs
+                    </p>
+                </div>
+                <div class="project">
+                    <a href="https://suno.com/@psykomatt" class="lumi-lien">Profil Suno</a>
+                    <p>Pour une utilisation libre de droit ou par plaisir, venez découvrir mes créations musicales
+                        générées par l'IA.</p>
+                </div>
+                <!-- <div id="paragraphe3-7" class="cached"> -->
+                <div class="project">
+                    <a href="https://www.facebook.com/share/1CYXNFWTpL/" class="lumi-lien">Page Facebook perso</a>
+                    <p>Pour confirmer notre appartenance au cercle restreint qu'est l'amitié.</p>
+                </div>
+                <div class="project">
+                    <a href="https://www.snapchat.com/add/psykomatt?share_id=oJgK6MQSQ0Q&locale=fr-FR"
+                        class="lumi-lien">Profil Snapchat</a>
+                    <p><strong>Le réseau social que j'utilise le plus souvent !</strong></p>
+                    <p>Pour m'envoyer des messages et suivre ma story la plus privée.</p>
+                </div>
+                <!-- </div> -->
+        </section>
+    </main>
+    <footer>
+        <p>&copy;2026 MattMarket Digitals</p>
+
+        <script src="MattMarketJS0_0.js"></script>
+    </footer>
+
+</body>
+
+<!-- 
+Retrouver mon journal 
+Faire la page en anglais-->
+
+</html>

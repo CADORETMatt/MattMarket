@@ -1,0 +1,248 @@
+:root {
+    --background-color: #0e0e0e;
+    --text-color: #d9bfff;
+    --primary-color: #470684;
+    --accent-color: #FF06B5;
+    --card-color: #1e0a2d;
+    --box-shadow-color: #FF06B5;
+    --border-radius: 12px;
+    --padding: 16px;
+    --max-width: 80%;
+}
+
+/* Corps */
+a {
+  color: var(--accent-color);
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+.banner {
+  display: inline-flex;
+  /*align-items: center;*/
+  background-color: var(--primary-color);
+   box-shadow: 0 0 15px var(--box-shadow-color);
+  animation: neonBorderPulse 10s infinite; 
+}
+.logo {
+  width: 30%;
+  flex: left;
+}
+.social-icons {
+  width: 30%;
+  margin-left: 35%;
+  display: flex;
+    gap: 20px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+/* TITRE néon modifié */
+h1, h2 {
+    font-size: 2.8em;
+    text-transform: uppercase;
+    margin: 30px auto;
+    color: var(--accent-color);
+    animation: neonPulse 6s infinite;
+}
+
+@keyframes neonPulse {
+    0%, 74% {
+        text-shadow:
+            0 0 5px var(--box-shadow-color),
+            0 0 10px var(--box-shadow-color),
+            0 0 20px var(--box-shadow-color),
+            0 0 40px var(--box-shadow-color);
+    }
+    75%, 77%, 79% {
+        text-shadow: none;
+    }
+    76%, 78%, 80% {
+        text-shadow:
+            0 0 2px var(--box-shadow-color),
+            0 0 5px var(--box-shadow-color);
+    }
+    100% {
+        text-shadow:
+            0 0 5px var(--box-shadow-color),
+            0 0 10px var(--box-shadow-color),
+            0 0 20px var(--box-shadow-color),
+            0 0 40px var(--box-shadow-color);
+    }
+}
+
+/* INTRO avec "I" décoratif */
+.intro {
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    margin: 40px auto;
+    max-width: var(--max-width);
+    font-size: 1.6em;
+    color: var(--text-color);
+}
+
+.intro-img {
+    width: 80px;
+    height: 80px;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 2.5em;
+    font-weight: bold;
+    border-radius: 0 0 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    box-shadow: -5px 5px 15px var(--box-shadow-color);
+}
+
+.intro p {
+    margin: 0;
+    font-weight: bold;
+}
+
+/* IMAGES */
+.imageGarde {
+    cursor: pointer;
+    width: 50%;
+    margin: 20px 0 14px 0;
+  
+    padding: var(--padding);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 15px var(--box-shadow-color);
+}
+
+/* TOOLTIP */
+.image-container {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip {
+    position: relative;
+    bottom: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    padding: 10px;
+    border-radius: 8px;
+    opacity: 0;
+    visibility: hidden;
+    white-space: nowrap;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 0 10px var(--box-shadow-color);
+    z-index: 10;  
+}
+
+.image-container:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* CONTENEURS */
+.container {
+    background: var(--card-color);
+    width: var(--max-width);
+    margin: 30px auto;
+    padding: var(--padding);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 15px var(--box-shadow-color);
+}
+
+.container h2 {
+    font-size: 2em;
+    text-transform: uppercase;
+    color: var(--accent-color);
+    margin-bottom: 20px;
+}
+
+/* PROJETS et OBJECTIFS */
+.project, .objectif {
+    background: var(--primary-color);
+    margin: 15px;
+    padding: var(--padding);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 8px var(--box-shadow-color);
+}
+
+.objectif h3 {
+    color: var(--text-color);
+}
+
+.illustrations {
+  width: 90%;
+  height: auto;
+  border-radius: 15px;
+}
+/* LIENS avec scintillement néon */
+.lumi-lien, button {
+    display: inline-block;
+    text-decoration: none;
+    font-size: 1.3em;
+    color: var(--accent-color);
+    background: var(--primary-color);/* transparent */
+    padding: 10px 20px;
+    margin: 15px;
+    border: 2px solid var(--accent-color);
+    border-radius: 6px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 0 20px var(--box-shadow-color);
+    animation: neonBorderPulse 10s infinite;  /* Application de l'animation */
+}
+
+/* Effet de scintillement irrégulier sur la bordure */
+@keyframes neonBorderPulse {
+    0%, 100% {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 10px var(--box-shadow-color), 0 0 20px var(--box-shadow-color);
+    }
+    20% {
+        border-color: #FF06B5;
+        box-shadow: 0 0 30px var(--box-shadow-color), 0 0 40px var(--box-shadow-color);
+    }
+    30% {
+        border-color: transparent;
+        box-shadow: 0 0 5px var(--box-shadow-color);
+    }
+    50% {
+        border-color: #FF06B5;
+        box-shadow: 0 0 40px var(--box-shadow-color), 0 0 50px var(--box-shadow-color);
+    }
+    70% {
+        border-color: transparent;
+        box-shadow: 0 0 10px var(--box-shadow-color), 0 0 20px var(--box-shadow-color);
+    }
+    80% {
+        border-color: #FF06B5;
+        box-shadow: 0 0 20px var(--box-shadow-color), 0 0 30px var(--box-shadow-color);
+    }
+}
+.bouton2 {
+  display: flex;
+  position: relative;
+}
+
+a:hover, button:hover {
+    background: var(--accent-color);
+    color: var(--background-color);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px var(--box-shadow-color); /* L'ombre sera toujours présente au survol */
+}
+
+/* LOGO - rendu originel restauré */
+#logo {
+    width: 50%;
+    border-radius: 5px;
+    box-shadow: 0 -5px 15px forestgreen;
+}
+    .cached {
+      display: none; /* Cache chaque paragraphe individuellement */
+    }
