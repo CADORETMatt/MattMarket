@@ -34,6 +34,27 @@
       <a href="AlloWill\index.html">Jouez au jeu</a>
     </section>
     <br><br>
+    <section class="content" class="question">
+      <h3>Spotify ou Youtube ?</h3>
+      <p>Pour le ménage ou le travail, quelle est votre support préféré pour écouter de la musique sans limite de temps
+        ?</p>
+      <br>
+      <!-- Bouton qui affiche un <p> -->
+      <div style="margin-left: 30vw; margin-right: 30vw; display: flex;
+            justify-content: space-between;
+            align-items: center;">
+        <button
+          onclick="document.getElementById('repYTB').style.display='block'; this.disabled=true; document.querySelector('#repSpt5').disabled=true;">YOUTUBE</button>
+        <p>ou</p>
+        <button
+          onclick="document.getElementById('repSptf5').style.display='block'; this.disabled=true; document.querySelector('#repYTB').disabled=true;">SPOTIFY</button>
+      </div>
+      <div id="repDiv" style="margin: 100px; display: block;">
+        <p id="repSptf5" style="display:none;">Et vous payez combien pour ça ?!</p>
+        <p id="repYTB" style="display:none;">Suivez-moi, créez vos playlist et gagnez de l'argent !</p>
+      </div>
+    </section>
+
   </main>
   <footer>
     <p>&copy; 2026 MattMarket. All rights reserved.</p>
