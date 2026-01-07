@@ -253,9 +253,9 @@
 <body>
     <div id="sidebar">
         <h2>Tableau de bord</h2>
-        <button id="btn-salle1" class="active">Salle 1 (Toi)</button>
-        <button id="btn-salle2">Salle 2 (Robert)</button>
-        <button id="btn-salle3">Salle 3 (Michel)</button>
+        <button id="btn-j1">Joueur 1 (#Toi)</button>
+        <button id="btn-j2">Joueur 2 (#Robert)</button>
+        <button id="btn-j3">Joueur 3 (#Michel)</button>
         <div id="player-presentation"></div>
         <div id="player-params">
             <h3>Paramètres du Joueur</h3>
@@ -321,9 +321,9 @@
                 Lieu: "Émission TV « Tralala »",
                 Buzz: "inactif",
                 SallePublic: "Pupitre TV",
-                Salle1: { scene: "Epreuve", nom: "Toi", role: "Justicier", perso: "Animateur", vivant: true, type: "Humain" },
-                Salle2: { scene: "Loge", nom: "Robert", role: "Acolyte", perso: "Candidat", vivant: true, type: "Gpt" },
-                Salle3: { scene: "Coulisses", nom: "Michel", role: "Meurtrier", perso: "Producteur", vivant: true, type: "Gpt" },
+                J1: { sallePerso: 1, scene: "Epreuve", nom: "Toi", role: "Justicier", perso: "Animateur", vivant: true, type: "Humain" },
+                J2: { sallePerso: 2, scene: "Loge", nom: "Robert", role: "Acolyte", perso: "Candidat", vivant: true, type: "Gpt" },
+                J3: { sallePerso: 3, scene: "Coulisses", nom: "Michel", role: "Meurtrier", perso: "Producteur", vivant: true, type: "Gpt" },
                 currentSalle: "SallePublic",
                 buzzActive: false
             },
@@ -344,18 +344,19 @@
         const paramVivant = document.getElementById('param-vivant');
         const saveParams = document.getElementById('save-params');
 
-        const salleOrder = ['SallePublic', 'Salle1', 'Salle2', 'Salle3'];
+        const salleOrder = ['SallePublic', 'J1', 'J2', 'J3'];
         let mode = 'joueur'; // ou 'mj'
-        let currentSalle = 'Salle1'; // Par défaut, salle du joueur
+        let currentSalle = 'SallePublic'; // Par défaut, salle du joueur
         ///////View des joueur////////////////
-        let viewedPlayer = 'Salle1'; // J1 par défaut
-        const playerKeys = ['Salle1', 'Salle2', 'Salle3'];
+        let viewedPlayer = 'J1'; // J1 par défaut
+        const playerKeys = ['J1', 'J2', 'J3'];
         const togglePlayerBtn = document.getElementById('toggle-player');
         togglePlayerBtn.addEventListener('click', () => {
             const index = playerKeys.indexOf(viewedPlayer);
-            viewedPlayer = playerKeys[(index + 1) % playerKeys.length];
-            togglePlayerBtn.textContent = `Vue : J${index + 2 > 3 ? 1 : index + 2}`;
-            updateSidebar();
+            const newIndex = (index + 1) % playerKeys.length;
+            viewedPlayer = playerKeys[newIndex];
+            togglePlayerBtn.textContent = `Vue : J${newIndex + 1}`;
+            updateViewPlayer();
         });
         //////////// Btn MJ  ////////////////////////
         const toggleMJBtn = document.getElementById('toggle-mj');
@@ -385,7 +386,7 @@
                     message: '🔄 L’ADN du scénario a été modifié par le MJ.',
                     target: null
                 });
-                updateSalleUI();
+                updateCardPlayer();
                 showMessages();
             } catch (e) {
                 alert("ADN invalide (JSON incorrect)");
@@ -398,7 +399,7 @@
             if (e.shiftKey) {
                 //toggleSalle();
             } else {
-                nextSalle(); updateSidebar();
+                nextSalle(); updateCardPlayer();
             }
         });
 
@@ -407,9 +408,9 @@
         function showMessages() {
             display.innerHTML = '';
             partie.history.forEach(msg => {
-                const isRelevant = (msg.sender === 'Salle1' && msg.target === currentSalle) ||
-                    (msg.sender === currentSalle && msg.target === 'Salle1') ||
-                    (currentSalle === 'Salle1' && !msg.target); // Publique
+                const isRelevant = (msg.sender === 'J1' && msg.target === currentSalle) ||
+                    (msg.sender === currentSalle && msg.target === 'J1') ||
+                    ((currentSalle === 'J1' || currentSalle === 'SallePublic') && !msg.target); // Publique
 
                 if (isRelevant) {
                     const p = document.createElement('p');
@@ -419,7 +420,7 @@
                             : partie.adn[msg.sender]?.nom ?? msg.sender;
                     p.textContent = `${senderName}: ${msg.message}`;
                     p.classList.add('visible'); // Toujours visible si relevant
-                    if (!partie.adn[currentSalle].vivant) {
+                    if (partie.adn[currentSalle] && typeof partie.adn[currentSalle] === 'object' && !partie.adn[currentSalle].vivant) {
                         p.style.display = 'none'; // Invisible si absent
                     }
                     display.appendChild(p);
@@ -437,7 +438,7 @@
                     "Authorization": `Bearer ${OPENAI_API_KEY}`
                 },
                 body: JSON.stringify({
-                    model: "gpt-4.1-mini",
+                    model: "gpt-4o-mini",
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: userPrompt }
@@ -488,9 +489,7 @@ Réagis à la dernière interaction dans la scène avec Toi.
                 buttons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 const raw = btn.id.replace('btn-', '');
-                currentSalle = raw.charAt(0).toUpperCase() + raw.slice(1);
-                partie.adn.currentSalle = `${currentSalle} (${partie.adn[currentSalle].scene})`;
-                showMessages();
+                viewedPlayer = raw.charAt(0).toUpperCase() + raw.slice(1);
                 loadPlayerParams();
             });
         });
@@ -498,7 +497,7 @@ Réagis à la dernière interaction dans la scène avec Toi.
         // Charger les params du joueur
         function loadPlayerParams(playerKey = viewedPlayer) {
             const player = partie.adn[playerKey];
-            if (!player) return;
+            if (!player || typeof player !== 'object') return;
 
             paramName.value = player.nom;
             paramRole.value = player.role;
@@ -510,14 +509,14 @@ Réagis à la dernière interaction dans la scène avec Toi.
 
         // Sauvegarder les params
         saveParams.addEventListener('click', () => {
-            const player = partie.adn[currentSalle];
+            const player = partie.adn[viewedPlayer];
             player.nom = paramName.value;
             player.perso = paramPerso.value;
             player.type = paramType.value;
             player.scene = paramScene.value;
             player.vivant = paramVivant.checked;
             // Mise à jour des boutons si nom change
-            document.getElementById(`btn-${currentSalle}`).textContent = `${currentSalle} (${player.nom})`;
+            document.getElementById(`btn-${viewedPlayer.toLowerCase()}`).textContent = `Joueur ${viewedPlayer.replace('J', '')} (#${player.nom})`;
             showMessages(); // Refresh pour visibilité
         });
 
@@ -526,21 +525,21 @@ Réagis à la dernière interaction dans la scène avec Toi.
             const message = messageInput.value.trim();
             if (!message) return;
 
-            const target = currentSalle !== 'Salle1' ? currentSalle : null;
-            partie.history.push({ sender: 'Salle1', message, target });
+            const target = (currentSalle !== 'J1' && currentSalle !== 'SallePublic') ? currentSalle : null;
+            partie.history.push({ sender: 'J1', message, target });
             showMessages();
             messageInput.value = '';
 
-            if (currentSalle !== 'Salle1') {
+            if (target) {
                 // Conversation privée
-                const response = await getIAResponse(currentSalle);
+                const response = await getIAResponse(target);
                 if (response) {
-                    partie.history.push({ sender: currentSalle, message: response, target: 'Salle1' });
+                    partie.history.push({ sender: target, message: response, target: 'J1' });
                     showMessages();
                 }
             } else {
                 // Publique, répondre les autres si GPT et vivants
-                for (let salle of ['Salle2', 'Salle3']) {
+                for (let salle of ['J2', 'J3']) {
                     const response = await getIAResponse(salle);
                     if (response) {
                         partie.history.push({ sender: salle, message: response, target: null });
@@ -555,33 +554,14 @@ Réagis à la dernière interaction dans la scène avec Toi.
             if (!partie.adn.buzzActive) return;
             const msg = "👉 Tu appuies sur le buzz.";
             partie.history.push({ sender: 'System', message: msg, target: null });
-            if (partie.adn.Salle3.vivant) {
+            if (partie.adn.J3.vivant) {
                 const killMsg = "💥 PAN ! Michel est démasqué comme meurtrier.";
                 partie.history.push({ sender: 'System', message: killMsg, target: null });
-                partie.adn.Salle3.vivant = false;
+                partie.adn.J3.vivant = false;
             }
             buzz.disabled = true;
             showMessages();
         });
-        ////////////////Gestion Salle ///////////////////////////////////
-        function nextSalle() {
-            const index = salleOrder.indexOf(currentSalle);
-            currentSalle = salleOrder[(index + 1) % salleOrder.length];
-            partie.adn.currentSalle = currentSalle;
-            updateSidebar();
-            showMessages();
-        }
-
-        function updateSidebar() {
-            renderPlayerPresentation();
-
-            if (canEditPlayer(viewedPlayer)) {
-                playerParams.style.display = 'block';
-                loadPlayerParams(viewedPlayer);
-            } else {
-                playerParams.style.display = 'none';
-            }
-        }
 
         ///////////Toujours visible Salle/Perso/////////
         function renderPlayerPresentation() {
@@ -606,11 +586,11 @@ Réagis à la dernière interaction dans la scène avec Toi.
             const isMJ = mode === 'mj';
 
             // Écriture
-            messageInput.disabled = !isMJ && currentSalle !== 'Salle1';
+            messageInput.disabled = !isMJ && currentSalle !== 'J1' && currentSalle !== 'SallePublic';
 
-            // Buzz
-            buzz.style.display = isMJ ? 'block' : 'none';
-
+            // Buzz = gameplay → jamais caché
+            buzz.style.display = 'block';
+            buzzNext.style.display = 'block';
             // Paramètres joueurs
             playerParams.style.display = isMJ ? 'block' : 'none';
         }
@@ -631,51 +611,102 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
 
             partie.adn = JSON.parse(newAdn);
             partie.history = [];
-            updateSalleUI();
+            updateCardPlayer();
             showMessages();
         }
         function toggleSalle() {
             // mode = mode === 'joueur' ? 'mj' : 'joueur';
             //buzzNext.textContent = mode === 'mj' ? 'MJ' : 'Joueur';
         }
+        ////////////////Gestion Salle ///////////////////////////////////
+        function nextSalle() {
+            const index = salleOrder.indexOf(currentSalle);
+            currentSalle = salleOrder[(index + 1) % salleOrder.length];
+            partie.adn.currentSalle = currentSalle;
+            if (playerKeys.includes(currentSalle)) {
+                viewedPlayer = currentSalle;
+                loadPlayerParams();
+                buttons.forEach(b => b.classList.remove('active'));
+                document.getElementById(`btn-${currentSalle.toLowerCase()}`).classList.add('active');
+            } else {
+                buttons.forEach(b => b.classList.remove('active'));
+            }
+            updateRoomInfo();
+            showMessages();
+        }
+
+        function updateViewPlayer() {
+            loadPlayerParams();
+        }
+        function updateCardPlayer() {
+            // Présentation visible pour tous
+            renderPlayerPresentation();
+
+            const canEdit =
+                mode === 'mj' ||
+                (mode === 'joueur' && viewedPlayer === getLocalPlayer());
+
+            if (canEdit) {
+                playerParams.style.display = 'block';
+                loadPlayerParams(viewedPlayer);
+            } else {
+                playerParams.style.display = 'none';
+            }
+
+            updateCardPlayerButtons();
+        }
         //////////////Présentation Joueur///////////////////
         function canEditPlayer(playerKey) {
             if (mode === 'mj') return true;
-            return playerKey === 'Salle1'; // joueur local
+            return playerKey === 'J1'; // joueur local
         }
-        function updateSidebar() {
-            const presentation = document.getElementById('player-presentation');
+        function updateCardPlayerButtons() {
+            playerKeys.forEach((key, i) => {
+                const btn = document.getElementById(`btn-${key.toLowerCase()}`);
+                const p = partie.adn[key];
+                if (!btn || !p) return;
 
-            if (mode === 'joueur') {
-                playerParams.style.display = 'none';
-
-                const players = Object.entries(partie.adn)
-                    .filter(([k, v]) => v.nom)
-                    .map(([k, v]) => `
-        <p>
-          <strong>${v.nom}</strong><br>
-          ${v.perso} — ${v.vivant ? '🫀 Vivant' : '☠️ Mort'}
-        </p>
-      `)
-                    .join('');
-
-                presentation.innerHTML = `<h3>Personnages</h3>${players}`;
-                presentation.style.display = 'block';
+                btn.textContent = `Joueur ${i + 1} (#${p.nom})`;
+            });
+        }
+        ////////////Joueur local Supabase /////////////////
+        function getLocalPlayer() {
+            return 'J1'; // pour l’instant navigateur = J1
+        }
+        function updateRoomInfo() {
+            const info = document.getElementById('room-info');
+            let title = '';
+            let scene = '';
+            if (currentSalle === 'SallePublic') {
+                title = 'Salle Publique';
+                scene = partie.adn.SallePublic;
             } else {
-                presentation.style.display = 'none';
-                playerParams.style.display = 'block';
-                loadPlayerParams();
+                const player = partie.adn[currentSalle];
+                title = `${currentSalle} (${player.nom})`;
+                scene = player.scene;
             }
+            info.innerHTML = `<h2>${title} – ${scene}</h2>`;
+            const joueurs = Object.entries(partie.adn)
+                .filter(([k, v]) => playerKeys.includes(k) && typeof v === 'object' && v.scene === scene && v.vivant)
+                .map(([k, v]) => v.nom)
+                .join(', ');
+            info.innerHTML += `<p>👥 ${joueurs || 'Personne'}</p>`;
         }
-
         // Initialisation
         function init() {
             const welcome = "🎬 Bienvenue dans Tralala. Tu es l’Animateur (Justicier). Sélectionne une salle ou reste en public.";
             partie.history.push({ sender: 'System', message: welcome, target: null });
             showMessages();
             loadPlayerParams();
+            updateCardPlayerButtons();
+            updateCardPlayer();
+            applyPermissions();
+            updateRoomInfo();
             setTimeout(activateBuzz, 5000);
         }
+        document.getElementById('abandon-btn').addEventListener('click', async () => {
+            await abandonnerPartie(partie.adn.J1.nom);
+        });
         init();
     </script>
 </body>
