@@ -58,7 +58,7 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 250px;
+            width: 320px;
             background: var(--sidebar-bg);
             padding: 20px;
             display: flex;
@@ -121,7 +121,8 @@
         }
 
         #main {
-            margin-left: 250px;
+            position: relative;
+            margin-left: 320px;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -247,15 +248,67 @@
                 margin-top: 10px;
             }
         }
+
+        #player-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        #player-buttons button {
+            flex: 1;
+            text-align: center;
+        }
+
+        @media (min-width: 900px) {
+            #player-presentation {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            #player-params label {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+        }
+
+        #player-presentation p {
+            background: #111;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        #mj-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 420px;
+            max-height: 45vh;
+            overflow: auto;
+
+            background: #0b0b0b;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+
+            font-size: 0.75rem;
+            white-space: pre-wrap;
+            display: none;
+            z-index: 5;
+        }
     </style>
 </head>
 
 <body>
     <div id="sidebar">
         <h2>Tableau de bord</h2>
-        <button id="btn-j1">Joueur 1 (#Toi)</button>
-        <button id="btn-j2">Joueur 2 (#Robert)</button>
-        <button id="btn-j3">Joueur 3 (#Michel)</button>
+        <div id="player-buttons">
+            <button id="btn-j1">J1</button>
+            <button id="btn-j2">J2</button>
+            <button id="btn-j3">J3</button>
+        </div>
         <div id="player-presentation"></div>
         <div id="player-params">
             <h3>Paramètres du Joueur</h3>
@@ -284,7 +337,7 @@
 
             <div id="mj-panel" style="display:none;">
                 <h3>🎭 Mode Maître du Jeu</h3>
-                <textarea id="adn-editor" rows="8"></textarea>
+                <textarea style="width: 300px;" id="adn-editor" rows="8"></textarea>
                 <button id="apply-adn">Appliquer ADN</button>
             </div>
         </div>
@@ -348,14 +401,15 @@
         let mode = 'joueur'; // ou 'mj'
         let currentSalle = 'SallePublic'; // Par défaut, salle du joueur
         ///////View des joueur////////////////
-        let viewedPlayer = 'J1'; // J1 par défaut
+        const viewUser = ['MJ', 'joueur'];
         const playerKeys = ['J1', 'J2', 'J3'];
+        let ViewedPlayer = playerKeys[0]; // J1 par défaut (source de vérité : playerKeys)
         const togglePlayerBtn = document.getElementById('toggle-player');
         togglePlayerBtn.addEventListener('click', () => {
-            const index = playerKeys.indexOf(viewedPlayer);
+            const index = playerKeys.indexOf(ViewedPlayer);
             const newIndex = (index + 1) % playerKeys.length;
-            viewedPlayer = playerKeys[newIndex];
-            togglePlayerBtn.textContent = `Vue : J${newIndex + 1}`;
+            ViewedPlayer = playerKeys[newIndex];
+            togglePlayerBtn.textContent = `Vue : ${ViewedPlayer}`;
             updateViewPlayer();
         });
         //////////// Btn MJ  ////////////////////////
@@ -377,20 +431,42 @@
             applyPermissions();
         });
         //////////////  Inject ADN /////////////////
-        document.getElementById('apply-adn').addEventListener('click', () => {
+        /*function applyAdnChange(newAdn, origin = 'MJ') {
+            partie.adn = newAdn;
+
+            partie.history.push({
+                sender: 'System',
+                message:
+                    origin === 'MJ'
+                        ? '🔄 L’ADN du scénario a été modifié par le MJ.'
+                        : `✏️ ${partie.adn[origin]?.nom ?? origin} a modifié ses paramètres.`,
+                target: null
+            });
+            updateCardPlayer(); showMessages();
+        }*/
+
+        function applyAdnChange(origin = 'MJ') {
             try {
-                const newAdn = JSON.parse(adnEditor.value);
-                partie.adn = newAdn;
+                const parsedAdn = JSON.parse(adnEditor.value);
+                partie.adn = parsedAdn;
+
                 partie.history.push({
                     sender: 'System',
-                    message: '🔄 L’ADN du scénario a été modifié par le MJ.',
+                    message:
+                        origin === 'MJ'
+                            ? '🔄 L’ADN du scénario a été modifié par le MJ.'
+                            : `✏️ ${partie.adn[origin]?.nom ?? origin} a modifié ses paramètres.`,
                     target: null
                 });
-                updateCardPlayer();
-                showMessages();
+                updateCardPlayer(); showMessages();
             } catch (e) {
                 alert("ADN invalide (JSON incorrect)");
             }
+        }
+
+        document.getElementById('apply-adn').addEventListener('click', () => {
+            const origin = mode === 'mj' ? 'MJ' : ViewedPlayer;
+            applyAdnChange(origin);
         });
         ////////////Next Salle /////////////////
         const buzzNext = document.getElementById('buzz-next');
@@ -482,20 +558,19 @@ Réagis à la dernière interaction dans la scène avec Toi.
             buzzInfo.textContent = "Le buzz est ACTIF. Un choix peut tuer.";
         }
 
-        // Gestion des boutons du sidebar
-        const buttons = document.querySelectorAll('#sidebar button');
-        buttons.forEach(btn => {
+        // Gestion des boutons joueurs (limiter la sélection aux boutons joueurs)
+        const playerButtons = document.querySelectorAll('#player-buttons button');
+        playerButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                buttons.forEach(b => b.classList.remove('active'));
+                playerButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 const raw = btn.id.replace('btn-', '');
-                viewedPlayer = raw.charAt(0).toUpperCase() + raw.slice(1);
+                ViewedPlayer = raw.charAt(0).toUpperCase() + raw.slice(1);
                 loadPlayerParams();
             });
         });
-
         // Charger les params du joueur
-        function loadPlayerParams(playerKey = viewedPlayer) {
+        function loadPlayerParams(playerKey = ViewedPlayer) {
             const player = partie.adn[playerKey];
             if (!player || typeof player !== 'object') return;
 
@@ -509,15 +584,24 @@ Réagis à la dernière interaction dans la scène avec Toi.
 
         // Sauvegarder les params
         saveParams.addEventListener('click', () => {
-            const player = partie.adn[viewedPlayer];
+            const player = partie.adn[ViewedPlayer];
             player.nom = paramName.value;
             player.perso = paramPerso.value;
             player.type = paramType.value;
             player.scene = paramScene.value;
             player.vivant = paramVivant.checked;
             // Mise à jour des boutons si nom change
-            document.getElementById(`btn-${viewedPlayer.toLowerCase()}`).textContent = `Joueur ${viewedPlayer.replace('J', '')} (#${player.nom})`;
-            showMessages(); // Refresh pour visibilité
+            const btnEl = document.getElementById(`btn-${ViewedPlayer.toLowerCase()}`);
+            if (btnEl) btnEl.textContent = `Joueur ${ViewedPlayer.replace('J', '')} (#${player.nom})`;
+
+            // Enregistrer modification dans l'historique et mettre à jour l'UI
+            partie.history.push({
+                sender: 'System',
+                message: `✏️ ${partie.adn[ViewedPlayer]?.nom ?? ViewedPlayer} a modifié ses paramètres.`,
+                target: null
+            });
+            updateCardPlayer();
+            showMessages();
         });
 
         // Envoi de message
@@ -624,12 +708,13 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
             currentSalle = salleOrder[(index + 1) % salleOrder.length];
             partie.adn.currentSalle = currentSalle;
             if (playerKeys.includes(currentSalle)) {
-                viewedPlayer = currentSalle;
+                ViewedPlayer = currentSalle;
                 loadPlayerParams();
-                buttons.forEach(b => b.classList.remove('active'));
-                document.getElementById(`btn-${currentSalle.toLowerCase()}`).classList.add('active');
+                playerButtons.forEach(b => b.classList.remove('active'));
+                const el = document.getElementById(`btn-${currentSalle.toLowerCase()}`);
+                if (el) el.classList.add('active');
             } else {
-                buttons.forEach(b => b.classList.remove('active'));
+                playerButtons.forEach(b => b.classList.remove('active'));
             }
             updateRoomInfo();
             showMessages();
@@ -644,11 +729,11 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
 
             const canEdit =
                 mode === 'mj' ||
-                (mode === 'joueur' && viewedPlayer === getLocalPlayer());
+                (mode === 'joueur' && ViewedPlayer === getLocalPlayer());
 
             if (canEdit) {
                 playerParams.style.display = 'block';
-                loadPlayerParams(viewedPlayer);
+                loadPlayerParams(ViewedPlayer);
             } else {
                 playerParams.style.display = 'none';
             }
@@ -692,6 +777,7 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
                 .join(', ');
             info.innerHTML += `<p>👥 ${joueurs || 'Personne'}</p>`;
         }
+
         // Initialisation
         function init() {
             const welcome = "🎬 Bienvenue dans Tralala. Tu es l’Animateur (Justicier). Sélectionne une salle ou reste en public.";
