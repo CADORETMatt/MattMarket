@@ -298,6 +298,64 @@
             display: none;
             z-index: 5;
         }
+
+        #room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /*/////////////Aff. Salles en cours//////////////////////////////*/
+        #room-dots {
+            display: flex;
+            align-items: center;
+            min-height: 20px;
+            /* IMPORTANT */
+            gap: 8px;
+        }
+
+        .room-dot {
+            display: inline-block;
+            /* IMPORTANT */
+            width: 14px;
+            height: 14px;
+            min-width: 14px;
+            min-height: 14px;
+            border-radius: 50%;
+            background: red
+                /*#444*/
+            ;
+            cursor: pointer;
+            opacity: 0.5;
+        }
+
+        .room-dot.active {
+            background: #FF06B5;
+            box-shadow: 0 0 8px #FF06B5;
+            opacity: 1;
+        }
+
+        /*/////////Abandon/////////////////*/
+        #modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 100;
+        }
+
+        #abandon-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            display: none;
+            z-index: 101;
+        }
     </style>
 </head>
 
@@ -331,14 +389,17 @@
         <h1>Tralala - Jeu Garou Mortel</h1>
         <div id="game-banner">
             <span id="game-status">🕯️ Le jeu est en cours</span>
-
-            <button id="toggle-player">Vue : J1</button>
             <button id="toggle-mj">Mode : Joueur</button>
-
+            <div id="room-header">
+                <div id="room-title"></div>
+                <div id="room-dots">
+                </div>
+            </div>
             <div id="mj-panel" style="display:none;">
                 <h3>🎭 Mode Maître du Jeu</h3>
                 <textarea style="width: 300px;" id="adn-editor" rows="8"></textarea>
                 <button id="apply-adn">Appliquer ADN</button>
+                <button id="toggle-player">Vue : J1</button>
             </div>
         </div>
 
@@ -366,6 +427,18 @@
         <button id="load-partie">📂 Ouvrir une partie</button>
         <input type="file" id="load-file" accept="application/json" style="display:none">
     </footer>
+    <div id="modal-overlay"></div>
+
+    <div id="abandon-modal">
+        <h2>Initier une nouvelle partie ?</h2>
+        <p>Nom du personnage :</p>
+        <input id="abandon-name" type="text" />
+
+        <div class="modal-actions">
+            <button id="confirm-abandon">Générer Partie</button>
+            <button id="cancel-abandon">Annuler</button>
+        </div>
+    </div>
 
     <script>
         // OpenAI API Key
@@ -399,7 +472,11 @@
         const paramScene = document.getElementById('param-scene');
         const paramVivant = document.getElementById('param-vivant');
         const saveParams = document.getElementById('save-params');
-
+        ////////Abandon//////////////////////////////////////
+        const overlay = document.getElementById('modal-overlay');
+        const modal = document.getElementById('abandon-modal');
+        //////Salles//////////////////
+        const salles = ['SallePublic', 'J1', 'J2', 'J3'];
         const salleOrder = ['SallePublic', 'J1', 'J2', 'J3'];
         let mode = 'joueur'; // ou 'mj'
         let currentSalle = 'SallePublic'; // Par défaut, salle du joueur
@@ -463,6 +540,7 @@
                     target: null
                 });
                 updateCardPlayer(); showMessages();
+                updateSalle(); // Ajouté pour rafraîchir les dots après modification ADN
             } catch (e) {
                 alert("ADN invalide (JSON incorrect)");
             }
@@ -515,11 +593,28 @@
                     updateMJAdnView();
                     showMessages();
                 } catch {
-                    alert('Fichier JSON invalide');
+                    alert('Chargé mais fichier JSON peut-être invalide');
                 }
             };
             reader.readAsText(file);
         });
+        ///////////Abandon///////////////////////////////////
+        document.getElementById('cancel-abandon').onclick = closeAbandonModal;
+
+        document.getElementById('confirm-abandon').onclick = async () => {
+            console.log("Abandon. Relance gpt");
+            alert("Prochainnement relié à Gpt !");
+            const name = document.getElementById('abandon-name').value || 'Un joueur';
+
+            closeAbandonModal();
+
+            const newAdn = await askGPT(
+                'Tu es un maître du jeu.',
+                `Le joueur ${name} abandonne. Réécris un ADN cohérent.`
+            );
+
+            applyAdnChange(JSON.parse(newAdn), 'System');
+        };
         /////////////////////////////        // Fonction pour afficher les messages
         function showMessages() {
             display.innerHTML = '';
@@ -718,7 +813,7 @@ Réagis à la dernière interaction dans la scène avec Toi.
             // Paramètres joueurs
             playerParams.style.display = isMJ ? 'block' : 'none';
         }
-        async function abandonnerPartie(nom) {
+        async function NewPartie(nom) {
             const prompt = `
 Voici l'ADN actuel :
 ${JSON.stringify(partie.adn, null, 2)}
@@ -736,6 +831,7 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
             partie.adn = JSON.parse(newAdn);
             partie.history = [];
             updateCardPlayer();
+            updateSalle(); // Ajouté pour rafraîchir les dots après nouvelle partie
             showMessages();
         }
         function toggleSalle() {
@@ -757,6 +853,7 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
                 playerButtons.forEach(b => b.classList.remove('active'));
             }
             updateRoomInfo();
+            updateSalle(); // Ajouté pour rafraîchir les dots lors du changement de salle
             showMessages();
         }
 
@@ -817,6 +914,44 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
                 .join(', ');
             info.innerHTML += `<p>👥 ${joueurs || 'Personne'}</p>`;
         }
+        ////////Aff. Salle en couurs /////////////////////////////
+        function updateSalle() {
+            const title = document.getElementById('room-title');
+            const dots = document.getElementById('room-dots');
+
+            title.textContent =
+                currentSalle === 'SallePublic'
+                    ? `Salle commune – ${partie.adn.SallePublic}`
+                    : `${currentSalle}`;
+
+            dots.innerHTML = '';
+
+            salles.forEach(salle => {
+                const dot = document.createElement('div');
+                dot.className = 'room-dot';
+                if (salle === currentSalle) dot.classList.add('active');
+
+                dot.title = salle;
+                dot.onclick = () => {
+                    currentSalle = salle;
+                    partie.adn.currentSalle = salle;
+                    updateSalle();
+                    showMessages();
+                };
+
+                dots.appendChild(dot);
+            });
+        }
+        ////////Abandon//////////////////////////////////////
+        function openAbandonModal() {
+            overlay.style.display = 'block';
+            modal.style.display = 'block';
+        }
+
+        function closeAbandonModal() {
+            overlay.style.display = 'none';
+            modal.style.display = 'none';
+        }
 
         // Initialisation
         function init() {
@@ -828,11 +963,11 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
             updateCardPlayer();
             applyPermissions();
             updateRoomInfo();
+            updateSalle(); // Ajouté pour générer les dots au démarrage
             setTimeout(activateBuzz, 5000);
         }
-        document.getElementById('abandon-btn').addEventListener('click', async () => {
-            await abandonnerPartie(partie.adn.J1.nom);
-        });
+        document.getElementById('abandon-btn').addEventListener('click', //async () => { await abandonnerPartie(partie.adn.J1.nom); }
+            () => openAbandonModal());
         init();
     </script>
 </body>
