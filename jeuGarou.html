@@ -229,26 +229,6 @@
             background: #111;
         }
 
-        @media (max-width: 768px) {
-            #sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                flex-direction: row;
-                justify-content: space-around;
-                overflow-y: visible;
-            }
-
-            #main {
-                margin-left: 0;
-                margin-top: 120px;
-            }
-
-            #player-params {
-                margin-top: 10px;
-            }
-        }
-
         #player-buttons {
             display: flex;
             gap: 8px;
@@ -309,30 +289,33 @@
         #room-dots {
             display: flex;
             align-items: center;
-            min-height: 20px;
+            min-height: 30px;
             /* IMPORTANT */
-            gap: 8px;
+            gap: 4px;
+            flex-wrap: wrap;
         }
 
         .room-dot {
-            display: inline-block;
-            /* IMPORTANT */
-            width: 14px;
-            height: 14px;
-            min-width: 14px;
-            min-height: 14px;
-            border-radius: 50%;
-            background: red
-                /*#444*/
-            ;
-            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: auto;
+            padding: 4px 8px;
+            height: 24px;
+            min-width: 60px;
+            border-radius: 12px;
+            background: #444;
+            cursor: default;
+            /* Non cliquable */
             opacity: 0.5;
+            font-size: 0.8rem;
         }
 
         .room-dot.active {
             background: #FF06B5;
             box-shadow: 0 0 8px #FF06B5;
             opacity: 1;
+            color: #fff;
         }
 
         /*/////////Abandon/////////////////*/
@@ -356,6 +339,123 @@
             display: none;
             z-index: 101;
         }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                position: relative;
+                top: auto;
+                bottom: auto;
+                left: auto;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+                gap: 4px;
+            }
+
+            #main {
+                margin-left: 0;
+                padding: 10px;
+                margin-top: 120px;
+                overflow-y: auto;
+            }
+
+            #player-params {
+                margin-top: 10px;
+                padding: 5px;
+            }
+
+            #display {
+                font-size: 0.8rem;
+                padding: 5px;
+                flex: 1;
+                min-height: 50vh;
+            }
+
+            #buzz-zone {
+                gap: 12px;
+                padding: 5px;
+            }
+
+            #buzz {
+                width: 80px;
+                height: 80px;
+            }
+
+            #buzz-next {
+                width: 60px;
+                height: 60px;
+            }
+
+            #input-zone {
+                padding: 5px;
+            }
+
+            #message-input {
+                padding: 5px;
+                font-size: 0.8rem;
+            }
+
+            #send-btn {
+                padding: 5px 10px;
+                font-size: 0.8rem;
+            }
+
+            #player-buttons button {
+                height: 30px;
+                font-size: 0.8rem;
+                padding: 4px 8px;
+            }
+
+            #player-presentation p {
+                padding: 4px;
+                font-size: 0.8rem;
+            }
+
+            #player-params label {
+                margin-bottom: 5px;
+                font-size: 0.8rem;
+            }
+
+            #player-params input,
+            #player-params select {
+                padding: 3px;
+                font-size: 0.8rem;
+            }
+
+            #mj-panel {
+                width: 100%;
+                right: 0;
+                top: 100px;
+                padding: 5px;
+                font-size: 0.7rem;
+            }
+
+            #mj-panel textarea {
+                width: 100%;
+                rows: 6;
+            }
+
+            #room-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            #abandon-modal {
+                width: 90%;
+                padding: 10px;
+            }
+
+            #abandon-modal input,
+            #abandon-modal button {
+                font-size: 0.8rem;
+            }
+
+            body {
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 
@@ -369,7 +469,7 @@
         </div>
         <div id="player-presentation"></div>
         <div id="player-params">
-            <h3>Paramètres du Joueur</h3>
+            <h3 id="params-title"></h3>
             <label>Nom: <input type="text" id="param-name"></label>
             <label>Role: <input type="text" id="param-role" readonly></label>
             <label>Personnage: <input type="text" id="param-perso"></label>
@@ -399,7 +499,7 @@
                 <h3>🎭 Mode Maître du Jeu</h3>
                 <textarea style="width: 300px;" id="adn-editor" rows="8"></textarea>
                 <button id="apply-adn">Appliquer ADN</button>
-                <button id="toggle-player">Vue : J1</button>
+                <button id="toggle-user">Vue : J1</button>
             </div>
         </div>
 
@@ -424,13 +524,13 @@
         Jeu de rôle expérimental par MattMarket Digitals.
         <button id="abandon-btn">Abandonner la partie</button>
         <button id="save-partie">💾 Sauvegarder la partie</button>
-        <button id="load-partie">📂 Ouvrir une partie</button>
-        <input type="file" id="load-file" accept="application/json" style="display:none">
     </footer>
     <div id="modal-overlay"></div>
 
     <div id="abandon-modal">
         <h2>Initier une nouvelle partie ?</h2>
+        <button id="load-partie">📂 Ouvrir une partie</button>
+        <input type="file" id="load-file" accept="application/json" style="display:none">
         <p>Nom du personnage :</p>
         <input id="abandon-name" type="text" />
 
@@ -483,15 +583,27 @@
         ///////View des joueur////////////////
         const viewUser = ['MJ', 'joueur'];
         const playerKeys = ['J1', 'J2', 'J3'];
-        let ViewedPlayer = playerKeys[0]; // J1 par défaut (source de vérité : playerKeys)
-        const togglePlayerBtn = document.getElementById('toggle-player');
-        togglePlayerBtn.addEventListener('click', () => {
+        //let ViewedPlayer = playerKeys[0]; // J1 par défaut (source de vérité : playerKeys)
+        let ViewedPlayer = 'J1';
+        let User1is = 'J1'; // joueur local (ou vue MJ)
+
+        const toggleUserBtn = document.getElementById('toggle-user');
+        toggleUserBtn.addEventListener('click', () => {
+            if (mode !== 'mj') return;
+
+            const index = playerKeys.indexOf(User1is);
+            User1is = playerKeys[(index + 1) % playerKeys.length];
+
+            toggleUserBtn.textContent = `Vue : ${User1is}`;
+            updateCardPlayer();
+        });
+        /*toggleUserBtn.addEventListener('click', () => {
             const index = playerKeys.indexOf(ViewedPlayer);
             const newIndex = (index + 1) % playerKeys.length;
             ViewedPlayer = playerKeys[newIndex];
-            togglePlayerBtn.textContent = `Vue : ${ViewedPlayer}`;
+            toggleUserBtn.textContent = `Vue : ${ViewedPlayer}`;
             updateViewPlayer();
-        });
+        });*/
         //////////// Btn MJ  ////////////////////////
         const toggleMJBtn = document.getElementById('toggle-mj');
         const mjPanel = document.getElementById('mj-panel');
@@ -506,6 +618,8 @@
                 mode = 'joueur';
                 toggleMJBtn.textContent = "Mode: Joueur";
                 mjPanel.style.display = 'none';
+                ViewedPlayer = 'J1';
+                loadPlayerParams();
 
             }
 
@@ -590,13 +704,15 @@
 
                     updateCardPlayer();
                     updateSalle();
-                    updateMJAdnView();
+                    //updateMJAdnView();
                     showMessages();
                 } catch {
                     alert('Chargé mais fichier JSON peut-être invalide');
                 }
             };
             reader.readAsText(file);
+            closeAbandonModal(); // Fermer modal après load
+            updateRoomInfo(); // Actualiser affichage
         });
         ///////////Abandon///////////////////////////////////
         document.getElementById('cancel-abandon').onclick = closeAbandonModal;
@@ -615,6 +731,14 @@
 
             applyAdnChange(JSON.parse(newAdn), 'System');
         };
+        ///////////Mes params/////////////////
+        const title = document.getElementById('params-title');
+
+        if (mode === 'mj') {
+            title.textContent = `Paramètres – ${User1is}`;
+        } else {
+            title.textContent = 'Mes paramètres';
+        }
         /////////////////////////////        // Fonction pour afficher les messages
         function showMessages() {
             display.innerHTML = '';
@@ -700,12 +824,16 @@ Réagis à la dernière interaction dans la scène avec Toi.
                 playerButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 const raw = btn.id.replace('btn-', '');
-                ViewedPlayer = raw.charAt(0).toUpperCase() + raw.slice(1);
-                loadPlayerParams();
+                /*ViewedPlayer = raw.charAt(0).toUpperCase() + raw.slice(1);
+                loadPlayerParams();*/
+                if (mode !== 'mj') return;
+                User1is = raw.charAt(0).toUpperCase() + raw.slice(1);
+                loadPlayerParams(User1is);
+                updateCardPlayer();
             });
         });
         // Charger les params du joueur
-        function loadPlayerParams(playerKey = ViewedPlayer) {
+        function loadPlayerParams(playerKey = User1is) {
             const player = partie.adn[playerKey];
             if (!player || typeof player !== 'object') return;
 
@@ -811,7 +939,15 @@ Réagis à la dernière interaction dans la scène avec Toi.
             buzz.style.display = 'block';
             buzzNext.style.display = 'block';
             // Paramètres joueurs
-            playerParams.style.display = isMJ ? 'block' : 'none';
+            // playerParams.style.display = isMJ ? 'block' : 'none';
+            // Boutons TB visibles en MJ seulement
+            // document.getElementById('player-buttons').style.display = isMJ ? 'flex' : 'none';
+            document.getElementById('player-buttons').style.display =
+                mode === 'mj' ? 'flex' : 'none';
+            // Bouton Vue J# uniquement MJ
+            toggleUserBtn.style.display =
+                mode === 'mj' ? 'inline-block' : 'none';
+
         }
         async function NewPartie(nom) {
             const prompt = `
@@ -843,15 +979,15 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
             const index = salleOrder.indexOf(currentSalle);
             currentSalle = salleOrder[(index + 1) % salleOrder.length];
             partie.adn.currentSalle = currentSalle;
-            if (playerKeys.includes(currentSalle)) {
-                ViewedPlayer = currentSalle;
+            /*if (playerKeys.includes(currentSalle)) {
+                //ViewedPlayer = currentSalle;
                 loadPlayerParams();
                 playerButtons.forEach(b => b.classList.remove('active'));
                 const el = document.getElementById(`btn-${currentSalle.toLowerCase()}`);
                 if (el) el.classList.add('active');
             } else {
                 playerButtons.forEach(b => b.classList.remove('active'));
-            }
+            }*/
             updateRoomInfo();
             updateSalle(); // Ajouté pour rafraîchir les dots lors du changement de salle
             showMessages();
@@ -861,21 +997,21 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
             loadPlayerParams();
         }
         function updateCardPlayer() {
-            // Présentation visible pour tous
             renderPlayerPresentation();
 
-            const canEdit =
-                mode === 'mj' ||
-                (mode === 'joueur' && ViewedPlayer === getLocalPlayer());
+            const canEdit = mode === 'mj' || mode === 'joueur';
+
+            playerParams.style.display = canEdit ? 'block' : 'none';
 
             if (canEdit) {
-                playerParams.style.display = 'block';
-                loadPlayerParams(ViewedPlayer);
-            } else {
-                playerParams.style.display = 'none';
+                loadPlayerParams(User1is);
             }
 
-            updateCardPlayerButtons();
+            const title = document.getElementById('params-title');
+            title.textContent =
+                mode === 'mj'
+                    ? `Paramètres – ${User1is}`
+                    : 'Mes paramètres';
         }
         //////////////Présentation Joueur///////////////////
         function canEditPlayer(playerKey) {
@@ -892,9 +1028,9 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
             });
         }
         ////////////Joueur local Supabase /////////////////
-        function getLocalPlayer() {
+        /*function getLocalPlayer() {
             return 'J1'; // pour l’instant navigateur = J1
-        }
+        }*/
         function updateRoomInfo() {
             const info = document.getElementById('room-info');
             let title = '';
@@ -912,32 +1048,25 @@ Renvoie UNIQUEMENT un nouvel ADN JSON.
                 .filter(([k, v]) => playerKeys.includes(k) && typeof v === 'object' && v.scene === scene && v.vivant)
                 .map(([k, v]) => v.nom)
                 .join(', ');
-            info.innerHTML += `<p>👥 ${joueurs || 'Personne'}</p>`;
+            info.innerHTML += `<p>👥 ${joueurs || 'Tout le monde'}</p>`;
         }
         ////////Aff. Salle en couurs /////////////////////////////
         function updateSalle() {
             const title = document.getElementById('room-title');
             const dots = document.getElementById('room-dots');
 
-            title.textContent =
+            /*title.textContent =
                 currentSalle === 'SallePublic'
                     ? `Salle commune – ${partie.adn.SallePublic}`
-                    : `${currentSalle}`;
+                    : `Salle ${currentSalle.replace('J', '')}`;*/
 
             dots.innerHTML = '';
 
             salles.forEach(salle => {
-                const dot = document.createElement('div');
+                const dot = document.createElement('span');
                 dot.className = 'room-dot';
+                dot.textContent = salle === 'SallePublic' ? 'Salle commune' : `Salle ${salle.replace('J', '')}`;
                 if (salle === currentSalle) dot.classList.add('active');
-
-                dot.title = salle;
-                dot.onclick = () => {
-                    currentSalle = salle;
-                    partie.adn.currentSalle = salle;
-                    updateSalle();
-                    showMessages();
-                };
 
                 dots.appendChild(dot);
             });
